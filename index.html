@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f6e56">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StockApp">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<title>StockApp — Gestion de Stock</title>
+<style>
+  :root {
+    --teal: #0f6e56;
+    --teal-light: #1d9e75;
+    --teal-bg: #e1f5ee;
+    --teal-dark: #085041;
+    --amber: #ba7517;
+    --amber-bg: #faeeda;
+    --amber-light: #ef9f27;
+    --red: #a32d2d;
+    --red-bg: #fcebeb;
+    --blue: #185fa5;
+    --blue-bg: #e6f1fb;
+    --gray: #5f5e5a;
+    --gray-light: #f1efe8;
+    --gray-border: #d3d1c7;
+    --text: #2c2c2a;
+    --text-muted: #888780;
+    --bg: #f8f7f4;
+    --card: #ffffff;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --teal: #9fe1cb;
+      --teal-light: #5dcaa5;
+      --teal-bg: #04342c;
+      --teal-dark: #1d9e75;
+      --amber: #fac775;
+      --amber-bg: #412402;
+      --amber-light: #ef9f27;
+      --red: #f09595;
+      --red-bg: #501313;
+      --blue: #85b7eb;
+      --blue-bg: #042c53;
+      --gray: #b4b2a9;
+      --gray-light: #2c2c2a;
+      --gray-border: #444441;
+      --text: #f1efe8;
+      --text-muted: #888780;
+      --bg: #1a1a18;
+      --card: #242422;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+  
+  /* HEADER */
+  .header { background: var(--teal); color: white; padding: 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-title { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .header-sub { font-size: 12px; opacity: 0.8; margin-top: 1px; }
+  .date-nav { display: flex; align-items: center; gap: 8px; }
+  .date-nav button { background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .date-nav button:active { background: rgba(255,255,255,0.4); }
+  .date-display { font-size: 14px; font-weight: 500; min-width: 100px; text-align: center; }
+
+  /* TABS */
+  .tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--gray-border); position: sticky; top: 76px; z-index: 90; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 1; min-width: 80px; padding: 12px 8px; text-align: center; font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.15s; }
+  .tab.active { color: var(--teal-light); border-bottom-color: var(--teal-light); }
+  .tab-icon { font-size: 18px; margin-bottom: 2px; }
+
+  /* SECTION */
+  .section { display: none; padding: 16px; max-width: 800px; margin: 0 auto; }
+  .section.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--card); border-radius: var(--radius); border: 0.5px solid var(--gray-border); padding: 16px; margin-bottom: 12px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+  /* SUMMARY STATS */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat { background: var(--gray-light); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+  .stat-value { font-size: 20px; font-weight: 600; }
+  .stat.green .stat-value { color: var(--teal-light); }
+  .stat.amber .stat-value { color: var(--amber); }
+  .stat.red .stat-value { color: var(--red); }
+  .stat.blue .stat-value { color: var(--blue); }
+
+  /* FORMS */
+  .form-row { margin-bottom: 12px; }
+  .form-row label { font-size: 12px; font-weight: 500; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .form-row input, .form-row select { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-border); border-radius: var(--radius-sm); font-size: 15px; background: var(--bg); color: var(--text); appearance: none; -webkit-appearance: none; }
+  .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--teal-light); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  /* BUTTONS */
+  .btn { padding: 10px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--teal-light); color: white; width: 100%; }
+  .btn-primary:hover { background: var(--teal); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-ghost { background: transparent; border: 1px solid var(--gray-border); color: var(--text); }
+  .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+
+  /* PAY TOGGLE */
+  .pay-toggle { display: flex; border: 1px solid var(--gray-border); border-radius: var(--radius-sm); overflow: hidden; }
+  .pay-toggle button { flex: 1; padding: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; background: var(--bg); color: var(--text-muted); }
+  .pay-toggle button.active-p { background: var(--teal-bg); color: var(--teal); }
+  .pay-toggle button.active-b { background: var(--amber-bg); color: var(--amber); }
+
+  /* FAVORITES */
+  .fav-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .fav-chip { background: var(--teal-bg); color: var(--teal-dark); border-radius: 20px; padding: 5px 12px; font-size: 13px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 5px; }
+  .fav-chip:active { background: var(--teal-light); color: white; }
+  .fav-chip .star { color: var(--amber); font-size: 11px; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; margin: -4px; padding: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+  th { background: var(--gray-light); padding: 8px 10px; text-align: left; font-weight: 600; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+  td { padding: 10px; border-bottom: 0.5px solid var(--gray-border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--gray-light); }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-p { background: var(--teal-bg); color: var(--teal); }
+  .badge-b { background: var(--amber-bg); color: var(--amber); }
+  .del-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; }
+  .del-btn:hover { color: var(--red); background: var(--red-bg); }
+
+  /* FILTERS */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
+  .filter-row select { flex: 1; min-width: 120px; padding: 8px 10px; font-size: 13px; border: 1px solid var(--gray-border); border-radius: var(--radius-sm); background: var(--card); color: var(--text); }
+  .filter-row button { padding: 8px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; white-space: nowrap; cursor: pointer; border: 1px solid var(--gray-border); background: var(--card); color: var(--text); }
+  .filter-row button.active { background: var(--teal-bg); color: var(--teal); border-color: var(--teal-light); }
+
+  /* SECTION TOTALS */
+  .totals-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--gray-light); border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; margin-top: 8px; }
+  .totals-row span { color: var(--text-muted); font-weight: 400; }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+  .empty .icon { font-size: 40px; margin-bottom: 10px; }
+
+  /* SETTINGS */
+  .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 0.5px solid var(--gray-border); }
+  .settings-item:last-child { border-bottom: none; }
+  .settings-label { font-size: 14px; }
+  .settings-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .pill { display: flex; align-items: center; gap: 6px; background: var(--gray-light); border-radius: 20px; padding: 5px 10px 5px 14px; font-size: 13px; }
+  .pill-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; line-height: 1; }
+  .pill-star { background: none; border: none; cursor: pointer; font-size: 14px; }
+  .add-row { display: flex; gap: 8px; margin-top: 10px; }
+  .add-row input { flex: 1; padding: 9px 12px; border: 1px solid var(--gray-border); border-radius: var(--radius-sm); font-size: 14px; background: var(--bg); color: var(--text); }
+  .add-row button { padding: 9px 16px; background: var(--teal-light); color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+
+  /* STOCK SUMMARY */
+  .stock-table tr.low td { background: var(--red-bg); }
+  .stock-table tr.low td:first-child { border-left: 3px solid var(--red); }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; transition: all 0.25s; z-index: 999; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* BOTTOM NAV (for very small screens) */
+  @media (max-width: 480px) {
+    .section { padding: 12px; }
+  }
+
+  /* PRINT BUTTONS */
+  .print-btn-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .print-btn { display: flex; align-items: center; gap: 7px; padding: 10px 16px; color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; flex: 1; justify-content: center; transition: all 0.15s; }
+  .print-btn:active { transform: scale(0.97); }
+  .print-btn.green { background: var(--teal-light); }
+  .print-btn.green:hover { background: var(--teal); }
+  .print-btn.red { background: #c0392b; }
+  .print-btn.red:hover { background: #a93226; }
+  .pdf-progress { display: none; text-align: center; padding: 10px; font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+  .pdf-progress.show { display: block; }
+
+  /* ===== PRINT STYLES ===== */
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+    body > *:not(#print-area) { display: none !important; }
+    #print-area { display: block !important; }
+
+    #print-area {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10pt;
+      color: #1a1a1a;
+      background: white;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Running header on every page after the first */
+    @page {
+      size: A4 portrait;
+      margin: 22mm 12mm 14mm 12mm;
+    }
+    @page :first {
+      margin-top: 14mm;
+    }
+
+    /* The sticky page-header block printed on pages 2+ via fixed positioning */
+    .p-page-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-bottom: 1.5px solid #0f6e56;
+      padding: 4px 0 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .p-page-header-title { font-size: 9pt; font-weight: 700; color: #0f6e56; }
+    .p-page-header-date { font-size: 8.5pt; color: #555; }
+
+    .p-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2.5px solid #0f6e56; padding-bottom: 8px; margin-bottom: 14px; }
+    .p-header-left h1 { font-size: 16pt; font-weight: 700; color: #0f6e56; margin: 0 0 2px; }
+    .p-header-left p { font-size: 9pt; color: #555; margin: 0; }
+    .p-header-right { text-align: right; font-size: 9pt; color: #555; }
+    .p-header-right strong { font-size: 11pt; color: #1a1a1a; display: block; }
+
+    .p-kpi-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .p-kpi { flex: 1; border: 1.5px solid #d3d1c7; border-radius: 5px; padding: 8px 10px; text-align: center; }
+    .p-kpi-label { font-size: 7.5pt; color: #666; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+    .p-kpi-value { font-size: 13pt; font-weight: 700; }
+    .p-kpi.green .p-kpi-value { color: #0f6e56; }
+    .p-kpi.amber .p-kpi-value { color: #ba7517; }
+    .p-kpi.blue .p-kpi-value { color: #185fa5; }
+
+    .p-section-title { font-size: 9pt; font-weight: 700; color: #0f6e56; text-transform: uppercase; letter-spacing: 0.5px; border-left: 3px solid #0f6e56; padding-left: 7px; margin: 13px 0 6px; page-break-after: avoid; }
+
+    .p-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-bottom: 8px; }
+    .p-table thead { display: table-header-group; }
+    .p-table th { background: #e1f5ee; color: #085041; font-weight: 700; padding: 5px 7px; text-align: left; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.3px; border: 0.5px solid #9fe1cb; }
+    .p-table td { padding: 5px 7px; border-bottom: 0.5px solid #d3d1c7; vertical-align: middle; }
+    .p-table tr:nth-child(even) td { background: #f8f7f4; }
+    .p-table tfoot td { background: #0f6e56; color: white; font-weight: 700; font-size: 9pt; border-color: #085041; padding: 6px 7px; }
+    .p-badge-p { background: #e1f5ee; color: #085041; padding: 1px 5px; border-radius: 3px; font-size: 7pt; font-weight: 700; }
+    .p-badge-b { background: #faeeda; color: #854f0b; padding: 1px 5px; border-radius: 3px; font-size: 7pt; font-weight: 700; }
+    .p-low td { background: #fff0f0 !important; }
+    .p-low td:first-child { border-left: 3px solid #a32d2d; color: #a32d2d; font-weight: 700; }
+
+    .p-two-col { display: flex; gap: 12px; }
+    .p-two-col > div { flex: 1; min-width: 0; }
+
+    .p-divider { border: none; border-top: 1px dashed #d3d1c7; margin: 12px 0; }
+
+    .p-footer { border-top: 1px solid #d3d1c7; margin-top: 16px; padding-top: 6px; font-size: 7pt; color: #999; display: flex; justify-content: space-between; }
+
+    .p-page-break { page-break-before: always; }
+    .p-no-break { page-break-inside: avoid; }
+  }
+
+  #print-area { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">📦 StockApp</div>
+    <div class="header-sub" id="header-sub">Chargement...</div>
+  </div>
+  <div class="date-nav">
+    <button onclick="changeDay(-1)">‹</button>
+    <div class="date-display" id="date-display">—</div>
+    <button onclick="changeDay(1)">›</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('ventes')"><div class="tab-icon">🛒</div>Ventes</div>
+  <div class="tab" onclick="showTab('resume')"><div class="tab-icon">📊</div>Résumé</div>
+  <div class="tab" onclick="showTab('achats')"><div class="tab-icon">🏭</div>Achats</div>
+  <div class="tab" onclick="showTab('stock')"><div class="tab-icon">📦</div>Stock</div>
+  <div class="tab" onclick="showTab('config')"><div class="tab-icon">⚙️</div>Config</div>
+</div>
+
+<!-- ======================== SECTION VENTES ======================== -->
+<div id="sec-ventes" class="section active">
+  <div class="card">
+    <div class="card-title">Nouvelle vente</div>
+
+    <!-- Client -->
+    <div class="form-row">
+      <label>Client</label>
+      <div id="fav-clients-vente" class="fav-list"></div>
+      <input type="text" id="v-client" placeholder="Nom du client..." autocomplete="off">
+    </div>
+
+    <!-- Désignation + QTE + Prix -->
+    <div class="form-row">
+      <label>Article</label>
+      <select id="v-designation"></select>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Quantité</label>
+        <input type="number" id="v-qte" placeholder="0" min="1">
+      </div>
+      <div class="form-row">
+        <label>Prix Unitaire (MAD)</label>
+        <input type="number" id="v-prix" placeholder="0.00" step="0.01">
+      </div>
+    </div>
+
+    <!-- Montant calculé -->
+    <div style="background: var(--teal-bg); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 13px; color: var(--teal);">Montant</span>
+      <strong id="v-montant-preview" style="font-size: 18px; color: var(--teal);">0.00 MAD</strong>
+    </div>
+
+    <!-- Payé -->
+    <div class="form-row">
+      <label>Paiement</label>
+      <div class="pay-toggle">
+        <button id="pay-p-btn" onclick="setPay('P')">✓ Payé (P)</button>
+        <button id="pay-b-btn" onclick="setPay('B')">⏳ À crédit (B)</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="addVente()">＋ Ajouter la vente</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-row">
+    <select id="f-vente-client" onchange="renderVentesTable()">
+      <option value="">Tous les clients</option>
+    </select>
+    <select id="f-vente-desig" onchange="renderVentesTable()">
+      <option value="">Tous les articles</option>
+    </select>
+    <button id="f-pay-all" onclick="setPayFilter('all')" class="active">Tous</button>
+    <button id="f-pay-p" onclick="setPayFilter('P')">Payé</button>
+    <button id="f-pay-b" onclick="setPayFilter('B')">Crédit</button>
+  </div>
+
+  <!-- Table -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div class="table-wrap">
+      <table id="ventes-table">
+        <thead><tr>
+          <th>Client</th><th>Qté</th><th>Article</th><th>P.U.</th><th>Montant</th><th>Payé</th><th></th>
+        </tr></thead>
+        <tbody id="ventes-tbody"></tbody>
+      </table>
+    </div>
+    <div id="ventes-totals" class="totals-row" style="margin: 0; border-radius: 0;"></div>
+  </div>
+</div>
+
+<!-- ======================== SECTION RÉSUMÉ ======================== -->
+<div id="sec-resume" class="section">
+
+  <div class="print-btn-row">
+    <button class="print-btn green" onclick="printResume()">🖨️ Imprimer</button>
+    <button class="print-btn red" onclick="exportPDF()">📄 Exporter PDF</button>
+  </div>
+  <div class="pdf-progress" id="pdf-progress">⏳ Génération du PDF en cours…</div>
+
+  <div class="stats-grid">
+    <div class="stat green">
+      <div class="stat-label">Total Vendu</div>
+      <div class="stat-value" id="sum-vendu">0 MAD</div>
+    </div>
+    <div class="stat amber">
+      <div class="stat-label">À encaisser</div>
+      <div class="stat-value" id="sum-credit">0 MAD</div>
+    </div>
+    <div class="stat blue">
+      <div class="stat-label">Total Acheté</div>
+      <div class="stat-value" id="sum-achat">0 MAD</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Transactions</div>
+      <div class="stat-value" id="sum-trans">0</div>
+    </div>
+  </div>
+
+  <!-- Ventes par article (résumé) -->
+  <div class="card">
+    <div class="card-title">Ventes par article</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Qté Vendue</th><th>Article</th><th>Total Vendu</th></tr></thead>
+        <tbody id="resume-ventes-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Ventes détaillées -->
+  <div class="card">
+    <div class="card-title">Détail des ventes — par client</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>Qté</th><th>Article</th><th>P.U.</th><th>Montant</th><th>Payé</th></tr></thead>
+        <tbody id="resume-ventes-detail-tbody"></tbody>
+        <tfoot id="resume-ventes-detail-tfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Achats par article (résumé) -->
+  <div class="card">
+    <div class="card-title">Achats par article</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Qté Achetée</th><th>Article</th><th>Total Achat</th></tr></thead>
+        <tbody id="resume-achats-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Achats détaillés -->
+  <div class="card">
+    <div class="card-title">Détail des achats — par fournisseur</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fournisseur</th><th>Qté</th><th>Article</th><th>Prix Achat</th><th>Total</th></tr></thead>
+        <tbody id="resume-achats-detail-tbody"></tbody>
+        <tfoot id="resume-achats-detail-tfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stock du jour -->
+  <div class="card">
+    <div class="card-title">Stock restant (fin de journée)</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Article</th><th>Stock J-1</th><th>+Acheté</th><th>−Vendu</th><th>= Stock</th></tr></thead>
+        <tbody id="resume-stock-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== PRINT AREA (hidden on screen) ======================== -->
+<div id="print-area"></div>
+
+<!-- ======================== SECTION ACHATS ======================== -->
+<div id="sec-achats" class="section">
+  <div class="card">
+    <div class="card-title">Nouvel achat</div>
+
+    <div class="form-row">
+      <label>Fournisseur</label>
+      <div id="fav-fournisseurs" class="fav-list"></div>
+      <input type="text" id="a-fourni" placeholder="Nom du fournisseur..." autocomplete="off">
+    </div>
+
+    <div class="form-row">
+      <label>Article</label>
+      <select id="a-designation"></select>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Quantité</label>
+        <input type="number" id="a-qte" placeholder="0" min="1">
+      </div>
+      <div class="form-row">
+        <label>Prix Achat (MAD)</label>
+        <input type="number" id="a-prix" placeholder="0.00" step="0.01">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="addAchat()">＋ Ajouter l'achat</button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-row">
+    <select id="f-achat-fourni" onchange="renderAchatsTable()">
+      <option value="">Tous les fournisseurs</option>
+    </select>
+    <select id="f-achat-desig" onchange="renderAchatsTable()">
+      <option value="">Tous les articles</option>
+    </select>
+  </div>
+
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div class="table-wrap">
+      <table id="achats-table">
+        <thead><tr>
+          <th>Fournisseur</th><th>Qté</th><th>Article</th><th>Prix Achat</th><th></th>
+        </tr></thead>
+        <tbody id="achats-tbody"></tbody>
+      </table>
+    </div>
+    <div id="achats-totals" class="totals-row" style="margin: 0; border-radius: 0;"></div>
+  </div>
+</div>
+
+<!-- ======================== SECTION STOCK ======================== -->
+<div id="sec-stock" class="section">
+  <div class="card">
+    <div class="card-title">Stock initial (J-1)</div>
+    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Saisir le stock de départ pour chaque article. Le stock des jours suivants est calculé automatiquement.</p>
+    <div id="stock-inputs"></div>
+    <button class="btn btn-primary" onclick="saveStockInitial()" style="margin-top: 8px;">💾 Enregistrer le stock initial</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Stock actuel — Jour sélectionné</div>
+    <div class="table-wrap">
+      <table class="stock-table">
+        <thead><tr><th>Article</th><th>Stock J-1</th><th>Acheté</th><th>Vendu</th><th>Stock Actuel</th></tr></thead>
+        <tbody id="stock-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== SECTION CONFIG ======================== -->
+<div id="sec-config" class="section">
+
+  <!-- Articles -->
+  <div class="card">
+    <div class="card-title">Articles (Désignations)</div>
+    <div id="articles-list" class="pill-row"></div>
+    <div class="add-row">
+      <input type="text" id="new-article" placeholder="Nouveau article...">
+      <button onclick="addArticle()">＋ Ajouter</button>
+    </div>
+    <div style="margin-top: 12px;">
+      <div class="card-title" style="margin-bottom: 8px;">Prix unitaire par article</div>
+      <div id="prix-inputs"></div>
+    </div>
+  </div>
+
+  <!-- Clients favoris -->
+  <div class="card">
+    <div class="card-title">Clients favoris</div>
+    <div id="clients-list" class="pill-row"></div>
+    <div class="add-row">
+      <input type="text" id="new-client" placeholder="Nom du client...">
+      <button onclick="addClient()">＋ Ajouter</button>
+    </div>
+  </div>
+
+  <!-- Fournisseurs favoris -->
+  <div class="card">
+    <div class="card-title">Fournisseurs</div>
+    <div id="fournis-list" class="pill-row"></div>
+    <div class="add-row">
+      <input type="text" id="new-fourni" placeholder="Nom du fournisseur...">
+      <button onclick="addFourni()">＋ Ajouter</button>
+    </div>
+  </div>
+
+  <!-- Export/Import -->
+  <div class="card">
+    <div class="card-title">Données</div>
+    <div class="settings-item">
+      <div><div class="settings-label">Exporter les données</div><div class="settings-sub">Télécharger un fichier JSON de sauvegarde</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Export</button>
+    </div>
+    <div class="settings-item">
+      <div><div class="settings-label">Importer les données</div><div class="settings-sub">Restaurer depuis un fichier JSON</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('import-file').click()">⬆ Import</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+    <div class="settings-item" style="border: none;">
+      <div><div class="settings-label" style="color: var(--red);">Effacer toutes les données</div><div class="settings-sub">Action irréversible</div></div>
+      <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑 Effacer</button>
+    </div>
+  </div>
+
+  <div style="text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted);">
+    StockApp v1.0 · PWA · Données stockées localement
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let appState = {
+  articles: ['Frite', 'Crevette', 'Calamar', 'Tortilla', 'Les sauces', 'Oeuf'],
+  prixUnit: { 'Oeuf': 0.50, 'Frite': 1.00, 'Crevette': 10, 'Calamar': 8, 'Tortilla': 5, 'Les sauces': 2 },
+  clients: [
+    { name: 'Ahmed', fav: true },
+    { name: 'Mouad', fav: true },
+    { name: 'Achraf', fav: false },
+    { name: 'Karim', fav: true }
+  ],
+  fournisseurs: [
+    { name: 'FOURNISSEUR01', fav: true },
+    { name: 'FOURNISSEUR02', fav: false }
+  ],
+  days: {},     // keyed by date string "YYYY-MM-DD"
+  stockInitial: {}  // keyed by article
+};
+
+let currentDay = todayStr();
+let payFilter = 'all';
+let currentPayChoice = 'P';
+
+function todayStr() {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+
+function dayData(dayStr) {
+  if (!appState.days[dayStr]) {
+    appState.days[dayStr] = { ventes: [], achats: [] };
+  }
+  return appState.days[dayStr];
+}
+
+// ============================================================
+// PERSISTENCE
+// ============================================================
+function save() {
+  try { localStorage.setItem('stockapp_v2', JSON.stringify(appState)); } catch(e) {}
+}
+function load() {
+  try {
+    const d = localStorage.getItem('stockapp_v2');
+    if (d) appState = Object.assign({}, appState, JSON.parse(d));
+  } catch(e) {}
+}
+
+// ============================================================
+// DATE NAV
+// ============================================================
+function changeDay(dir) {
+  const d = new Date(currentDay);
+  d.setDate(d.getDate() + dir);
+  currentDay = d.toISOString().split('T')[0];
+  updateDateDisplay();
+  renderAll();
+}
+
+function updateDateDisplay() {
+  const d = new Date(currentDay + 'T00:00:00');
+  const opts = { weekday: 'short', day: 'numeric', month: 'short' };
+  document.getElementById('date-display').textContent = d.toLocaleDateString('fr-FR', opts);
+  document.getElementById('header-sub').textContent = currentDay === todayStr() ? "Aujourd'hui" : currentDay;
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.tab[onclick="showTab('${name}')"]`).classList.add('active');
+  document.getElementById('sec-' + name).classList.add('active');
+  if (name === 'resume') renderResume();
+  if (name === 'stock') renderStock();
+  if (name === 'config') renderConfig();
+}
+
+// ============================================================
+// VENTES
+// ============================================================
+function setPay(val) {
+  currentPayChoice = val;
+  document.getElementById('pay-p-btn').className = val === 'P' ? 'active-p' : '';
+  document.getElementById('pay-b-btn').className = val === 'B' ? 'active-b' : '';
+}
+
+function calcMontant() {
+  const qte = parseFloat(document.getElementById('v-qte').value) || 0;
+  const prix = parseFloat(document.getElementById('v-prix').value) || 0;
+  const montant = qte * prix;
+  document.getElementById('v-montant-preview').textContent = montant.toFixed(2) + ' MAD';
+}
+
+function addVente() {
+  const client = document.getElementById('v-client').value.trim();
+  const designation = document.getElementById('v-designation').value;
+  const qte = parseFloat(document.getElementById('v-qte').value);
+  const prix = parseFloat(document.getElementById('v-prix').value);
+
+  if (!client) { showToast('⚠ Entrez un nom de client'); return; }
+  if (!designation) { showToast('⚠ Sélectionnez un article'); return; }
+  if (!qte || qte <= 0) { showToast('⚠ Entrez une quantité valide'); return; }
+  if (!prix || prix < 0) { showToast('⚠ Entrez un prix valide'); return; }
+
+  const montant = +(qte * prix).toFixed(2);
+
+  // Auto-save client
+  if (!appState.clients.find(c => c.name.toLowerCase() === client.toLowerCase())) {
+    appState.clients.push({ name: client, fav: false });
+  }
+  // Update prix unit
+  appState.prixUnit[designation] = prix;
+
+  dayData(currentDay).ventes.push({ client, designation, qte, prix, montant, paye: currentPayChoice, id: Date.now() });
+  save();
+
+  // Reset
+  document.getElementById('v-client').value = '';
+  document.getElementById('v-qte').value = '';
+  document.getElementById('v-prix').value = appState.prixUnit[designation] || '';
+  document.getElementById('v-montant-preview').textContent = '0.00 MAD';
+
+  renderVentesTable();
+  renderFavClients();
+  showToast('✓ Vente ajoutée');
+}
+
+function deleteVente(id) {
+  const day = dayData(currentDay);
+  day.ventes = day.ventes.filter(v => v.id !== id);
+  save();
+  renderVentesTable();
+  showToast('Vente supprimée');
+}
+
+function setPayFilter(f) {
+  payFilter = f;
+  ['all','P','B'].forEach(x => {
+    const btn = document.getElementById('f-pay-' + (x === 'all' ? 'all' : x.toLowerCase()));
+    if (btn) btn.classList.toggle('active', f === x);
+  });
+  renderVentesTable();
+}
+
+function renderVentesTable() {
+  const ventes = dayData(currentDay).ventes;
+  const fClient = document.getElementById('f-vente-client')?.value || '';
+  const fDesig = document.getElementById('f-vente-desig')?.value || '';
+
+  // Update filter dropdowns
+  const clients = [...new Set(ventes.map(v => v.client))];
+  const desigs = [...new Set(ventes.map(v => v.designation))];
+  fillFilter('f-vente-client', clients, 'Tous les clients');
+  fillFilter('f-vente-desig', desigs, 'Tous les articles');
+
+  let filtered = ventes;
+  if (fClient) filtered = filtered.filter(v => v.client === fClient);
+  if (fDesig) filtered = filtered.filter(v => v.designation === fDesig);
+  if (payFilter !== 'all') filtered = filtered.filter(v => v.paye === payFilter);
+
+  const tbody = document.getElementById('ventes-tbody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="icon">🛒</div>Aucune vente pour ce jour</div></td></tr>`;
+    document.getElementById('ventes-totals').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(v => `
+    <tr>
+      <td><strong>${esc(v.client)}</strong></td>
+      <td>${v.qte}</td>
+      <td>${esc(v.designation)}</td>
+      <td>${v.prix.toFixed(2)} MAD</td>
+      <td><strong>${v.montant.toFixed(2)} MAD</strong></td>
+      <td><span class="badge badge-${v.paye.toLowerCase()}">${v.paye}</span></td>
+      <td><button class="del-btn" onclick="deleteVente(${v.id})">✕</button></td>
+    </tr>`).join('');
+
+  const total = filtered.reduce((s, v) => s + v.montant, 0);
+  const totalP = filtered.filter(v => v.paye === 'P').reduce((s, v) => s + v.montant, 0);
+  const totalB = filtered.filter(v => v.paye === 'B').reduce((s, v) => s + v.montant, 0);
+  document.getElementById('ventes-totals').innerHTML = `
+    <span>${filtered.length} ligne(s)</span>
+    <div style="display:flex;gap:12px;font-size:12px;">
+      <span style="color:var(--teal)">Payé: ${totalP.toFixed(2)} MAD</span>
+      <span style="color:var(--amber)">Crédit: ${totalB.toFixed(2)} MAD</span>
+      <strong>Total: ${total.toFixed(2)} MAD</strong>
+    </div>`;
+}
+
+function renderFavClients() {
+  const favs = appState.clients.filter(c => c.fav);
+  const el = document.getElementById('fav-clients-vente');
+  if (!el) return;
+  el.innerHTML = favs.map(c => `
+    <div class="fav-chip" onclick="selectClient('${esc(c.name)}')">
+      <span class="star">★</span> ${esc(c.name)}
+    </div>`).join('');
+}
+
+function selectClient(name) {
+  document.getElementById('v-client').value = name;
+  const desig = document.getElementById('v-designation').value;
+  if (desig && appState.prixUnit[desig]) {
+    document.getElementById('v-prix').value = appState.prixUnit[desig];
+    calcMontant();
+  }
+}
+
+// ============================================================
+// ACHATS
+// ============================================================
+function addAchat() {
+  const fourni = document.getElementById('a-fourni').value.trim();
+  const designation = document.getElementById('a-designation').value;
+  const qte = parseFloat(document.getElementById('a-qte').value);
+  const prix = parseFloat(document.getElementById('a-prix').value);
+
+  if (!fourni) { showToast('⚠ Entrez un fournisseur'); return; }
+  if (!designation) { showToast('⚠ Sélectionnez un article'); return; }
+  if (!qte || qte <= 0) { showToast('⚠ Quantité invalide'); return; }
+  if (!prix || prix < 0) { showToast('⚠ Prix invalide'); return; }
+
+  if (!appState.fournisseurs.find(f => f.name.toLowerCase() === fourni.toLowerCase())) {
+    appState.fournisseurs.push({ name: fourni, fav: false });
+  }
+
+  dayData(currentDay).achats.push({ fourni, designation, qte, prix, id: Date.now() });
+  save();
+  document.getElementById('a-fourni').value = '';
+  document.getElementById('a-qte').value = '';
+  document.getElementById('a-prix').value = '';
+  renderAchatsTable();
+  renderFavFournis();
+  showToast('✓ Achat ajouté');
+}
+
+function deleteAchat(id) {
+  const day = dayData(currentDay);
+  day.achats = day.achats.filter(a => a.id !== id);
+  save();
+  renderAchatsTable();
+  showToast('Achat supprimé');
+}
+
+function renderAchatsTable() {
+  const achats = dayData(currentDay).achats;
+  const fFourni = document.getElementById('f-achat-fourni')?.value || '';
+  const fDesig = document.getElementById('f-achat-desig')?.value || '';
+
+  const fournis = [...new Set(achats.map(a => a.fourni))];
+  const desigs = [...new Set(achats.map(a => a.designation))];
+  fillFilter('f-achat-fourni', fournis, 'Tous les fournisseurs');
+  fillFilter('f-achat-desig', desigs, 'Tous les articles');
+
+  let filtered = achats;
+  if (fFourni) filtered = filtered.filter(a => a.fourni === fFourni);
+  if (fDesig) filtered = filtered.filter(a => a.designation === fDesig);
+
+  const tbody = document.getElementById('achats-tbody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="icon">🏭</div>Aucun achat pour ce jour</div></td></tr>`;
+    document.getElementById('achats-totals').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(a => `
+    <tr>
+      <td><strong>${esc(a.fourni)}</strong></td>
+      <td>${a.qte}</td>
+      <td>${esc(a.designation)}</td>
+      <td>${a.prix.toFixed(2)} MAD</td>
+      <td><button class="del-btn" onclick="deleteAchat(${a.id})">✕</button></td>
+    </tr>`).join('');
+
+  const total = filtered.reduce((s, a) => s + a.qte * a.prix, 0);
+  document.getElementById('achats-totals').innerHTML = `
+    <span>${filtered.length} ligne(s)</span>
+    <strong>Total: ${total.toFixed(2)} MAD</strong>`;
+}
+
+function renderFavFournis() {
+  const favs = appState.fournisseurs.filter(f => f.fav);
+  const el = document.getElementById('fav-fournisseurs');
+  if (!el) return;
+  el.innerHTML = favs.map(f => `
+    <div class="fav-chip" onclick="document.getElementById('a-fourni').value='${esc(f.name)}'">
+      <span class="star">★</span> ${esc(f.name)}
+    </div>`).join('');
+}
+
+// ============================================================
+// STOCK CALC
+// ============================================================
+function getPrevDay(dayStr) {
+  const d = new Date(dayStr + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split('T')[0];
+}
+
+function getStock(article, dayStr) {
+  // Stock = stockInitial[day] or computed from prev day
+  const initKey = article + '_' + dayStr;
+  if (appState.stockInitial[initKey] !== undefined) {
+    return appState.stockInitial[initKey];
+  }
+  // Compute from prev day
+  const prevDay = getPrevDay(dayStr);
+  const prevStock = getStock(article, prevDay);
+  if (prevStock === null) return null;
+
+  const prevData = dayData(prevDay);
+  const qteAchetePrev = prevData.achats.filter(a => a.designation === article).reduce((s, a) => s + a.qte, 0);
+  const qteVenduPrev = prevData.ventes.filter(v => v.designation === article).reduce((s, v) => s + v.qte, 0);
+  return prevStock + qteAchetePrev - qteVenduPrev;
+}
+
+function renderStock() {
+  // Stock initial inputs (for current day - 1 / absolute initial)
+  const inputs = document.getElementById('stock-inputs');
+  inputs.innerHTML = appState.articles.map(a => {
+    const initKey = a + '_initial';
+    const val = appState.stockInitial[initKey] !== undefined ? appState.stockInitial[initKey] : '';
+    return `<div class="form-row" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <label style="flex:1;min-width:80px;font-size:14px;color:var(--text)">${esc(a)}</label>
+      <input type="number" data-art="${esc(a)}" value="${val}" placeholder="0" min="0"
+        style="width:100px;padding:8px;border:1px solid var(--gray-border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text);">
+    </div>`;
+  }).join('');
+
+  // Stock summary table
+  const tbody = document.getElementById('stock-tbody');
+  const rows = appState.articles.map(art => {
+    const prevDayStr = getPrevDay(currentDay);
+    const stockPrev = getComputedStockForDay(art, prevDayStr);
+    const data = dayData(currentDay);
+    const achete = data.achats.filter(a => a.designation === art).reduce((s, a) => s + a.qte, 0);
+    const vendu = data.ventes.filter(v => v.designation === art).reduce((s, v) => s + v.qte, 0);
+    const stockActuel = (stockPrev !== null ? stockPrev : 0) + achete - vendu;
+    const low = stockActuel < 10;
+    return `<tr class="${low ? 'low' : ''}">
+      <td><strong>${esc(art)}</strong></td>
+      <td>${stockPrev !== null ? stockPrev : '—'}</td>
+      <td style="color:var(--teal)">+${achete}</td>
+      <td style="color:var(--red)">−${vendu}</td>
+      <td><strong style="${low ? 'color:var(--red)' : ''}">${stockActuel}</strong></td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows.join('') || `<tr><td colspan="5"><div class="empty">Aucun article configuré</div></td></tr>`;
+}
+
+function getComputedStockForDay(article, dayStr) {
+  const initKey = article + '_initial';
+  if (appState.stockInitial[initKey] === undefined) return null;
+
+  // Walk from initial day to target
+  const startDay = appState.stockInitial['_startDay'] || currentDay;
+  let stock = appState.stockInitial[initKey];
+  let day = new Date(startDay + 'T00:00:00');
+  const target = new Date(dayStr + 'T00:00:00');
+
+  while (day <= target) {
+    const ds = day.toISOString().split('T')[0];
+    const data = dayData(ds);
+    const achete = data.achats.filter(a => a.designation === article).reduce((s, a) => s + a.qte, 0);
+    const vendu = data.ventes.filter(v => v.designation === article).reduce((s, v) => s + v.qte, 0);
+    stock = stock + achete - vendu;
+    day.setDate(day.getDate() + 1);
+  }
+  return stock;
+}
+
+function saveStockInitial() {
+  document.querySelectorAll('#stock-inputs input[data-art]').forEach(inp => {
+    const art = inp.getAttribute('data-art');
+    const val = parseFloat(inp.value);
+    if (!isNaN(val)) appState.stockInitial[art + '_initial'] = val;
+  });
+  appState.stockInitial['_startDay'] = currentDay;
+  save();
+  renderStock();
+  showToast('✓ Stock initial enregistré');
+}
+
+// ============================================================
+// RESUME
+// ============================================================
+function buildDataMaps() {
+  const data = dayData(currentDay);
+  const ventes = data.ventes;
+  const achats = data.achats;
+  const ventesMap = {};
+  ventes.forEach(v => {
+    if (!ventesMap[v.designation]) ventesMap[v.designation] = { qte: 0, total: 0 };
+    ventesMap[v.designation].qte += v.qte;
+    ventesMap[v.designation].total += v.montant;
+  });
+  const achatsMap = {};
+  achats.forEach(a => {
+    if (!achatsMap[a.designation]) achatsMap[a.designation] = { qte: 0, total: 0 };
+    achatsMap[a.designation].qte += a.qte;
+    achatsMap[a.designation].total += a.qte * a.prix;
+  });
+  return { ventes, achats, ventesMap, achatsMap };
+}
+
+function renderResume() {
+  const { ventes, achats, ventesMap, achatsMap } = buildDataMaps();
+
+  const totalVendu = ventes.reduce((s, v) => s + v.montant, 0);
+  const totalCredit = ventes.filter(v => v.paye === 'B').reduce((s, v) => s + v.montant, 0);
+  const totalPaye = ventes.filter(v => v.paye === 'P').reduce((s, v) => s + v.montant, 0);
+  const totalAchat = achats.reduce((s, a) => s + a.qte * a.prix, 0);
+
+  document.getElementById('sum-vendu').textContent = totalVendu.toFixed(2) + ' MAD';
+  document.getElementById('sum-credit').textContent = totalCredit.toFixed(2) + ' MAD';
+  document.getElementById('sum-achat').textContent = totalAchat.toFixed(2) + ' MAD';
+  document.getElementById('sum-trans').textContent = ventes.length;
+
+  // Ventes by article
+  document.getElementById('resume-ventes-tbody').innerHTML = Object.entries(ventesMap).length
+    ? Object.entries(ventesMap).map(([d, val]) =>
+        `<tr><td>${val.qte}</td><td><strong>${esc(d)}</strong></td><td>${val.total.toFixed(2)} MAD</td></tr>`).join('')
+    : `<tr><td colspan="3"><div class="empty">Aucune vente</div></td></tr>`;
+
+  // Ventes detail
+  document.getElementById('resume-ventes-detail-tbody').innerHTML = ventes.length
+    ? ventes.map(v => `<tr>
+        <td><strong>${esc(v.client)}</strong></td>
+        <td>${v.qte}</td>
+        <td>${esc(v.designation)}</td>
+        <td>${v.prix.toFixed(2)} MAD</td>
+        <td><strong>${v.montant.toFixed(2)} MAD</strong></td>
+        <td><span class="badge badge-${v.paye.toLowerCase()}">${v.paye}</span></td>
+      </tr>`).join('')
+    : `<tr><td colspan="6"><div class="empty">Aucune vente</div></td></tr>`;
+  document.getElementById('resume-ventes-detail-tfoot').innerHTML = ventes.length
+    ? `<tr style="background:var(--gray-light);font-weight:600;font-size:12px;">
+        <td colspan="4" style="padding:8px 10px;color:var(--text-muted)">${ventes.length} ligne(s) · P: ${totalPaye.toFixed(2)} · B: ${totalCredit.toFixed(2)} MAD</td>
+        <td colspan="2" style="padding:8px 10px">Total: ${totalVendu.toFixed(2)} MAD</td>
+      </tr>` : '';
+
+  // Achats by article
+  document.getElementById('resume-achats-tbody').innerHTML = Object.entries(achatsMap).length
+    ? Object.entries(achatsMap).map(([d, val]) =>
+        `<tr><td>${val.qte}</td><td><strong>${esc(d)}</strong></td><td>${val.total.toFixed(2)} MAD</td></tr>`).join('')
+    : `<tr><td colspan="3"><div class="empty">Aucun achat</div></td></tr>`;
+
+  // Achats detail
+  document.getElementById('resume-achats-detail-tbody').innerHTML = achats.length
+    ? achats.map(a => `<tr>
+        <td><strong>${esc(a.fourni)}</strong></td>
+        <td>${a.qte}</td>
+        <td>${esc(a.designation)}</td>
+        <td>${a.prix.toFixed(2)} MAD</td>
+        <td><strong>${(a.qte * a.prix).toFixed(2)} MAD</strong></td>
+      </tr>`).join('')
+    : `<tr><td colspan="5"><div class="empty">Aucun achat</div></td></tr>`;
+  document.getElementById('resume-achats-detail-tfoot').innerHTML = achats.length
+    ? `<tr style="background:var(--gray-light);font-weight:600;font-size:12px;">
+        <td colspan="4" style="padding:8px 10px;color:var(--text-muted)">${achats.length} ligne(s)</td>
+        <td style="padding:8px 10px">Total: ${totalAchat.toFixed(2)} MAD</td>
+      </tr>` : '';
+
+  // Stock summary
+  const prevDayStr = getPrevDay(currentDay);
+  const stockRows = appState.articles.map(art => {
+    const stockPrev = getComputedStockForDay(art, prevDayStr);
+    const achete = (achatsMap[art] || {}).qte || 0;
+    const vendu = (ventesMap[art] || {}).qte || 0;
+    const stockActuel = (stockPrev !== null ? stockPrev : 0) + achete - vendu;
+    const low = stockActuel < 10;
+    return `<tr>
+      <td><strong>${esc(art)}</strong></td>
+      <td>${stockPrev !== null ? stockPrev : '—'}</td>
+      <td style="color:var(--teal-light)">+${achete}</td>
+      <td style="color:var(--red)">−${vendu}</td>
+      <td><strong style="${low ? 'color:var(--red)' : ''}">${stockActuel}</strong></td>
+    </tr>`;
+  });
+  document.getElementById('resume-stock-tbody').innerHTML = stockRows.join('');
+}
+
+// ============================================================
+// PRINT
+// ============================================================
+function printResume() {
+  const { ventes, achats, ventesMap, achatsMap } = buildDataMaps();
+
+  const totalVendu = ventes.reduce((s, v) => s + v.montant, 0);
+  const totalCredit = ventes.filter(v => v.paye === 'B').reduce((s, v) => s + v.montant, 0);
+  const totalPaye = ventes.filter(v => v.paye === 'P').reduce((s, v) => s + v.montant, 0);
+  const totalAchat = achats.reduce((s, a) => s + a.qte * a.prix, 0);
+
+  const d = new Date(currentDay + 'T00:00:00');
+  const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const nowStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const prevDayStr = getPrevDay(currentDay);
+
+  // Fournisseurs map for side table
+  const fMap = {};
+  achats.forEach(a => { if (!fMap[a.fourni]) fMap[a.fourni] = 0; fMap[a.fourni] += a.qte * a.prix; });
+
+  const html = `
+  <div class="p-header">
+    <div class="p-header-left">
+      <h1>StockApp — Rapport Journalier</h1>
+      <p>Situation complète : ventes, achats et stock</p>
+    </div>
+    <div class="p-header-right">
+      <strong>${dateStr}</strong>
+      Imprimé à ${nowStr}
+    </div>
+  </div>
+
+  <div class="p-kpi-row">
+    <div class="p-kpi green">
+      <div class="p-kpi-label">Total Vendu</div>
+      <div class="p-kpi-value">${totalVendu.toFixed(2)} MAD</div>
+    </div>
+    <div class="p-kpi green">
+      <div class="p-kpi-label">Encaissé (P)</div>
+      <div class="p-kpi-value">${totalPaye.toFixed(2)} MAD</div>
+    </div>
+    <div class="p-kpi amber">
+      <div class="p-kpi-label">À encaisser (B)</div>
+      <div class="p-kpi-value">${totalCredit.toFixed(2)} MAD</div>
+    </div>
+    <div class="p-kpi blue">
+      <div class="p-kpi-label">Total Acheté</div>
+      <div class="p-kpi-value">${totalAchat.toFixed(2)} MAD</div>
+    </div>
+  </div>
+
+  <div class="p-section-title">Section 1 — Ventes du jour</div>
+
+  <div class="p-two-col p-no-break">
+    <div>
+      <div style="font-size:7.5pt;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Résumé par article</div>
+      <table class="p-table">
+        <thead><tr><th>Qté Vendue</th><th>Article</th><th>Total Vendu</th></tr></thead>
+        <tbody>
+          ${Object.entries(ventesMap).length
+            ? Object.entries(ventesMap).map(([art, val]) =>
+                `<tr><td>${val.qte}</td><td><strong>${esc(art)}</strong></td><td>${val.total.toFixed(2)} MAD</td></tr>`).join('')
+            : '<tr><td colspan="3" style="color:#888;font-style:italic;text-align:center;">Aucune vente</td></tr>'}
+        </tbody>
+        ${Object.keys(ventesMap).length ? `<tfoot><tr><td colspan="2">TOTAL</td><td>${totalVendu.toFixed(2)} MAD</td></tr></tfoot>` : ''}
+      </table>
+    </div>
+    <div>
+      <div style="font-size:7.5pt;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Paiements</div>
+      <table class="p-table">
+        <thead><tr><th>Type</th><th>Montant</th></tr></thead>
+        <tbody>
+          <tr><td><span class="p-badge-p">P — Payé</span></td><td><strong>${totalPaye.toFixed(2)} MAD</strong></td></tr>
+          <tr><td><span class="p-badge-b">B — À crédit</span></td><td><strong>${totalCredit.toFixed(2)} MAD</strong></td></tr>
+        </tbody>
+        <tfoot><tr><td>TOTAL</td><td>${totalVendu.toFixed(2)} MAD</td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div style="font-size:7.5pt;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.4px;margin:8px 0 4px;">Détail des ventes — par client</div>
+  <table class="p-table">
+    <thead><tr><th>Client</th><th>Qté</th><th>Désignation</th><th>Prix Unit.</th><th>Montant</th><th>Payé</th></tr></thead>
+    <tbody>
+      ${ventes.length
+        ? ventes.map(v => `<tr>
+            <td><strong>${esc(v.client)}</strong></td>
+            <td>${v.qte}</td>
+            <td>${esc(v.designation)}</td>
+            <td>${v.prix.toFixed(2)} MAD</td>
+            <td>${v.montant.toFixed(2)} MAD</td>
+            <td><span class="p-badge-${v.paye.toLowerCase()}">${v.paye}</span></td>
+          </tr>`).join('')
+        : '<tr><td colspan="6" style="color:#888;font-style:italic;text-align:center;">Aucune vente enregistrée</td></tr>'}
+    </tbody>
+    ${ventes.length ? `<tfoot><tr>
+      <td colspan="4">${ventes.length} transaction(s) · Payé: ${totalPaye.toFixed(2)} MAD · Crédit: ${totalCredit.toFixed(2)} MAD</td>
+      <td colspan="2">${totalVendu.toFixed(2)} MAD</td>
+    </tr></tfoot>` : ''}
+  </table>
+
+  <hr class="p-divider">
+
+  <div class="p-section-title">Section 2 — Achats du jour</div>
+
+  <div class="p-two-col p-no-break">
+    <div>
+      <div style="font-size:7.5pt;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Résumé par article</div>
+      <table class="p-table">
+        <thead><tr><th>Qté Achetée</th><th>Article</th><th>Total Achat</th></tr></thead>
+        <tbody>
+          ${Object.entries(achatsMap).length
+            ? Object.entries(achatsMap).map(([art, val]) =>
+                `<tr><td>${val.qte}</td><td><strong>${esc(art)}</strong></td><td>${val.total.toFixed(2)} MAD</td></tr>`).join('')
+            : '<tr><td colspan="3" style="color:#888;font-style:italic;text-align:center;">Aucun achat</td></tr>'}
+        </tbody>
+        ${Object.keys(achatsMap).length ? `<tfoot><tr><td colspan="2">TOTAL</td><td>${totalAchat.toFixed(2)} MAD</td></tr></tfoot>` : ''}
+      </table>
+    </div>
+    <div>
+      <div style="font-size:7.5pt;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Par fournisseur</div>
+      <table class="p-table">
+        <thead><tr><th>Fournisseur</th><th>Total</th></tr></thead>
+        <tbody>
+          ${Object.entries(fMap).length
+            ? Object.entries(fMap).map(([f, t]) => `<tr><td>${esc(f)}</td><td>${t.toFixed(2)} MAD</td></tr>`).join('')
+            : '<tr><td colspan="2" style="color:#888;font-style:italic;">—</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="font-size:7.5pt;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.4px;margin:8px 0 4px;">Détail des achats — par fournisseur</div>
+  <table class="p-table">
+    <thead><tr><th>Fournisseur</th><th>Qté</th><th>Désignation</th><th>Prix Achat</th><th>Total</th></tr></thead>
+    <tbody>
+      ${achats.length
+        ? achats.map(a => `<tr>
+            <td><strong>${esc(a.fourni)}</strong></td>
+            <td>${a.qte}</td>
+            <td>${esc(a.designation)}</td>
+            <td>${a.prix.toFixed(2)} MAD</td>
+            <td>${(a.qte * a.prix).toFixed(2)} MAD</td>
+          </tr>`).join('')
+        : '<tr><td colspan="5" style="color:#888;font-style:italic;text-align:center;">Aucun achat enregistré</td></tr>'}
+    </tbody>
+    ${achats.length ? `<tfoot><tr><td colspan="4">${achats.length} ligne(s)</td><td>${totalAchat.toFixed(2)} MAD</td></tr></tfoot>` : ''}
+  </table>
+
+  <hr class="p-divider">
+
+  <div class="p-section-title">Section 3 — Situation du stock (fin de journée)</div>
+  <table class="p-table p-no-break">
+    <thead><tr><th>Article</th><th>Stock J-1</th><th>+ Acheté</th><th>− Vendu</th><th>= Stock Actuel</th></tr></thead>
+    <tbody>
+      ${appState.articles.map(art => {
+        const stockPrev = getComputedStockForDay(art, prevDayStr);
+        const achete = (achatsMap[art] || {}).qte || 0;
+        const vendu = (ventesMap[art] || {}).qte || 0;
+        const stockActuel = (stockPrev !== null ? stockPrev : 0) + achete - vendu;
+        const low = stockActuel < 10;
+        return `<tr class="${low ? 'p-low' : ''}">
+          <td><strong>${esc(art)}</strong></td>
+          <td>${stockPrev !== null ? stockPrev : '—'}</td>
+          <td>+${achete}</td>
+          <td>−${vendu}</td>
+          <td><strong>${stockActuel}</strong>${low ? ' ⚠' : ''}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+  ${appState.articles.some(art => {
+    const stockPrev = getComputedStockForDay(art, prevDayStr);
+    const achete = (achatsMap[art] || {}).qte || 0;
+    const vendu = (ventesMap[art] || {}).qte || 0;
+    return ((stockPrev !== null ? stockPrev : 0) + achete - vendu) < 10;
+  }) ? '<p style="font-size:7.5pt;color:#a32d2d;margin-top:4px;">⚠ Ligne(s) surlignées : stock inférieur à 10 unités</p>' : ''}
+
+  <div class="p-footer">
+    <span>StockApp — Rapport journalier · ${dateStr}</span>
+    <span>Généré le ${new Date().toLocaleDateString('fr-FR')} à ${nowStr}</span>
+  </div>`;
+
+  // Running page header shown on pages 2+ via fixed positioning
+  const pageHeader = `
+  <div class="p-page-header">
+    <span class="p-page-header-title">StockApp — Rapport Journalier</span>
+    <span class="p-page-header-date">${dateStr}</span>
+  </div>`;
+
+  document.getElementById('print-area').innerHTML = pageHeader + html;
+  window.print();
+}
+
+// ============================================================
+// PDF EXPORT  (jsPDF + html2canvas)
+// ============================================================
+async function exportPDF() {
+  const progress = document.getElementById('pdf-progress');
+  progress.classList.add('show');
+  progress.textContent = '⏳ Chargement des librairies…';
+
+  try {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+
+    progress.textContent = '⏳ Génération du rapport…';
+
+    const { ventes, achats, ventesMap, achatsMap } = buildDataMaps();
+    const totalVendu = ventes.reduce((s, v) => s + v.montant, 0);
+    const totalCredit = ventes.filter(v => v.paye === 'B').reduce((s, v) => s + v.montant, 0);
+    const totalPaye = ventes.filter(v => v.paye === 'P').reduce((s, v) => s + v.montant, 0);
+    const totalAchat = achats.reduce((s, a) => s + a.qte * a.prix, 0);
+    const d = new Date(currentDay + 'T00:00:00');
+    const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const nowStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const prevDayStr = getPrevDay(currentDay);
+    const fMap = {};
+    achats.forEach(a => { if (!fMap[a.fourni]) fMap[a.fourni] = 0; fMap[a.fourni] += a.qte * a.prix; });
+
+    // A4 dimensions (mm) and pixel scale
+    const { jsPDF } = window.jspdf;
+    const A4_W = 210, A4_H = 297;
+    const MARGIN = 12; // mm
+    const HEADER_H = 9; // mm — running header height on pages 2+
+    const FOOTER_H = 7; // mm
+    const CONTENT_W = A4_W - MARGIN * 2;
+    // Content height available per page (content area between margins minus footer)
+    const PAGE1_H = A4_H - MARGIN * 2 - FOOTER_H;
+    const PAGEn_H = A4_H - MARGIN - HEADER_H - 2 - MARGIN - FOOTER_H;
+
+    // Build off-screen render container (794px = A4 at 96dpi)
+    const PX_W = 794;
+    const container = document.createElement('div');
+    container.style.cssText = `position:fixed;top:-99999px;left:-99999px;width:${PX_W}px;background:white;
+      font-family:Arial,Helvetica,sans-serif;font-size:12.5px;color:#1a1a1a;
+      padding:38px 43px;box-sizing:border-box;line-height:1.4;`;
+    container.innerHTML = buildPrintHTML({ ventes, achats, ventesMap, achatsMap,
+      totalVendu, totalCredit, totalPaye, totalAchat, dateStr, nowStr, prevDayStr, fMap });
+    document.body.appendChild(container);
+
+    progress.textContent = '⏳ Rendu en cours…';
+    await new Promise(r => setTimeout(r, 150));
+
+    const canvas = await html2canvas(container, {
+      scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false
+    });
+    document.body.removeChild(container);
+
+    // mm per source pixel (at scale=2, canvas.width = PX_W*2)
+    const mmPerPx = CONTENT_W / canvas.width;
+    const totalH_mm = canvas.height * mmPerPx;
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    let yMm = 0; // how many mm of content already placed
+    let pageNum = 0;
+
+    while (yMm < totalH_mm) {
+      if (pageNum > 0) pdf.addPage();
+      pageNum++;
+      const isFirst = pageNum === 1;
+
+      // Available content height this page
+      const availH = isFirst ? PAGE1_H : PAGEn_H;
+      // Where to draw the image slice on the page
+      const drawY = isFirst ? MARGIN : MARGIN + HEADER_H + 2;
+
+      // Running header on pages 2+
+      if (!isFirst) {
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, 0, A4_W, drawY, 'F');
+        // Green bar
+        pdf.setFillColor(15, 110, 86);
+        pdf.rect(MARGIN, MARGIN + HEADER_H, CONTENT_W, 0.6, 'F');
+        // Title
+        pdf.setFontSize(8.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 110, 86);
+        pdf.text('StockApp — Rapport Journalier', MARGIN, MARGIN + HEADER_H - 1.5);
+        // Date
+        pdf.setFont('helvetica', 'normal'); pdf.setTextColor(80, 80, 80);
+        pdf.text(dateStr, A4_W - MARGIN, MARGIN + HEADER_H - 1.5, { align: 'right' });
+      }
+
+      // How many mm of content fits
+      const sliceH_mm = Math.min(availH - FOOTER_H, totalH_mm - yMm);
+      const sliceH_px = Math.round(sliceH_mm / mmPerPx);
+      const srcY_px = Math.round(yMm / mmPerPx);
+
+      // Slice canvas
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = Math.min(sliceH_px, canvas.height - srcY_px);
+      const ctx = sliceCanvas.getContext('2d');
+      ctx.drawImage(canvas, 0, srcY_px, sliceCanvas.width, sliceCanvas.height, 0, 0, sliceCanvas.width, sliceCanvas.height);
+
+      const actualSliceH_mm = sliceCanvas.height * mmPerPx;
+      pdf.addImage(sliceCanvas.toDataURL('image/jpeg', 0.93), 'JPEG', MARGIN, drawY, CONTENT_W, actualSliceH_mm);
+
+      // Footer
+      pdf.setFontSize(7); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(160, 160, 160);
+      pdf.text(`StockApp · ${dateStr}`, MARGIN, A4_H - MARGIN + 3);
+      pdf.text(`Page ${pageNum}`, A4_W - MARGIN, A4_H - MARGIN + 3, { align: 'right' });
+
+      yMm += actualSliceH_mm;
+    }
+
+    const fileName = `StockApp-${currentDay}.pdf`;
+    pdf.save(fileName);
+    progress.textContent = `✓ PDF téléchargé : ${fileName}`;
+    setTimeout(() => progress.classList.remove('show'), 3500);
+
+  } catch (err) {
+    console.error('PDF error:', err);
+    progress.textContent = '⚠ Erreur — essayez "Imprimer → Enregistrer en PDF"';
+    setTimeout(() => progress.classList.remove('show'), 4000);
+  }
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function buildPrintHTML({ ventes, achats, ventesMap, achatsMap, totalVendu, totalCredit, totalPaye, totalAchat, dateStr, nowStr, prevDayStr, fMap }) {
+  return `
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2.5px solid #0f6e56;padding-bottom:10px;margin-bottom:16px;">
+    <div>
+      <div style="font-size:18px;font-weight:700;color:#0f6e56;margin-bottom:2px;">StockApp — Rapport Journalier</div>
+      <div style="font-size:11px;color:#555;">Situation complète : ventes, achats et stock</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:13px;font-weight:700;">${dateStr}</div>
+      <div style="font-size:11px;color:#555;">Imprimé à ${nowStr}</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:18px;">
+    ${[
+      ['Total Vendu', totalVendu.toFixed(2)+' MAD', '#0f6e56'],
+      ['Encaissé (P)', totalPaye.toFixed(2)+' MAD', '#0f6e56'],
+      ['À encaisser (B)', totalCredit.toFixed(2)+' MAD', '#ba7517'],
+      ['Total Acheté', totalAchat.toFixed(2)+' MAD', '#185fa5']
+    ].map(([label, val, col]) => `
+      <div style="flex:1;border:1.5px solid #d3d1c7;border-radius:5px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">${label}</div>
+        <div style="font-size:15px;font-weight:700;color:${col};">${val}</div>
+      </div>`).join('')}
+  </div>
+
+  <div style="font-size:10px;font-weight:700;color:#0f6e56;text-transform:uppercase;letter-spacing:0.5px;border-left:3px solid #0f6e56;padding-left:7px;margin:14px 0 8px;">Section 1 — Ventes du jour</div>
+
+  <div style="display:flex;gap:14px;margin-bottom:10px;">
+    <div style="flex:1;">
+      <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px;">Résumé par article</div>
+      ${pdfTable(['Qté Vendue','Article','Total Vendu'],
+        Object.entries(ventesMap).map(([art,v]) => [v.qte, `<b>${esc(art)}</b>`, v.total.toFixed(2)+' MAD']),
+        Object.keys(ventesMap).length ? [['TOTAL','',totalVendu.toFixed(2)+' MAD']] : null,
+        'Aucune vente', 3)}
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px;">Paiements</div>
+      ${pdfTable(['Type','Montant'],
+        [['<span style="background:#e1f5ee;color:#085041;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:700;">P — Payé</span>', totalPaye.toFixed(2)+' MAD'],
+         ['<span style="background:#faeeda;color:#854f0b;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:700;">B — À crédit</span>', totalCredit.toFixed(2)+' MAD']],
+        [['TOTAL', totalVendu.toFixed(2)+' MAD']], null, 2)}
+    </div>
+  </div>
+
+  <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px;">Détail des ventes — par client</div>
+  ${pdfTable(['Client','Qté','Désignation','Prix Unit.','Montant','Payé'],
+    ventes.map(v => [`<b>${esc(v.client)}</b>`, v.qte, esc(v.designation), v.prix.toFixed(2)+' MAD', v.montant.toFixed(2)+' MAD',
+      `<span style="background:${v.paye==='P'?'#e1f5ee':'#faeeda'};color:${v.paye==='P'?'#085041':'#854f0b'};padding:1px 5px;border-radius:3px;font-size:8px;font-weight:700;">${v.paye}</span>`]),
+    ventes.length ? [[`${ventes.length} transaction(s) · P: ${totalPaye.toFixed(2)} · B: ${totalCredit.toFixed(2)} MAD`,'','','','',totalVendu.toFixed(2)+' MAD']] : null,
+    'Aucune vente enregistrée', 6)}
+
+  <div style="border-top:1px dashed #d3d1c7;margin:14px 0;"></div>
+
+  <div style="font-size:10px;font-weight:700;color:#0f6e56;text-transform:uppercase;letter-spacing:0.5px;border-left:3px solid #0f6e56;padding-left:7px;margin:14px 0 8px;">Section 2 — Achats du jour</div>
+
+  <div style="display:flex;gap:14px;margin-bottom:10px;">
+    <div style="flex:1;">
+      <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px;">Résumé par article</div>
+      ${pdfTable(['Qté Achetée','Article','Total Achat'],
+        Object.entries(achatsMap).map(([art,v]) => [v.qte, `<b>${esc(art)}</b>`, v.total.toFixed(2)+' MAD']),
+        Object.keys(achatsMap).length ? [['TOTAL','',totalAchat.toFixed(2)+' MAD']] : null,
+        'Aucun achat', 3)}
+    </div>
+    <div style="flex:1;">
+      <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px;">Par fournisseur</div>
+      ${pdfTable(['Fournisseur','Total'],
+        Object.entries(fMap).map(([f,t]) => [esc(f), t.toFixed(2)+' MAD']),
+        null, '—', 2)}
+    </div>
+  </div>
+
+  <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px;">Détail des achats — par fournisseur</div>
+  ${pdfTable(['Fournisseur','Qté','Désignation','Prix Achat','Total'],
+    achats.map(a => [`<b>${esc(a.fourni)}</b>`, a.qte, esc(a.designation), a.prix.toFixed(2)+' MAD', (a.qte*a.prix).toFixed(2)+' MAD']),
+    achats.length ? [[`${achats.length} ligne(s)`,'','','', totalAchat.toFixed(2)+' MAD']] : null,
+    'Aucun achat enregistré', 5)}
+
+  <div style="border-top:1px dashed #d3d1c7;margin:14px 0;"></div>
+
+  <div style="font-size:10px;font-weight:700;color:#0f6e56;text-transform:uppercase;letter-spacing:0.5px;border-left:3px solid #0f6e56;padding-left:7px;margin:14px 0 8px;">Section 3 — Situation du stock (fin de journée)</div>
+  ${pdfTable(['Article','Stock J-1','+ Acheté','− Vendu','= Stock Actuel'],
+    appState.articles.map(art => {
+      const stockPrev = getComputedStockForDay(art, prevDayStr);
+      const achete = (achatsMap[art]||{}).qte||0;
+      const vendu = (ventesMap[art]||{}).qte||0;
+      const stockActuel = (stockPrev!==null?stockPrev:0)+achete-vendu;
+      const low = stockActuel < 10;
+      return [
+        `<b style="${low?'color:#a32d2d':''}">${esc(art)}</b>`,
+        stockPrev!==null?stockPrev:'—',
+        `+${achete}`, `−${vendu}`,
+        `<b style="${low?'color:#a32d2d':''}">${stockActuel}${low?' ⚠':''}</b>`
+      ];
+    }),
+    null, 'Aucun article', 5,
+    appState.articles.map(art => {
+      const stockPrev = getComputedStockForDay(art, prevDayStr);
+      const achete = (achatsMap[art]||{}).qte||0;
+      const vendu = (ventesMap[art]||{}).qte||0;
+      return ((stockPrev!==null?stockPrev:0)+achete-vendu) < 10;
+    })
+  )}
+  ${appState.articles.some(art => {
+    const sp = getComputedStockForDay(art, prevDayStr);
+    const ac = (achatsMap[art]||{}).qte||0;
+    const ve = (ventesMap[art]||{}).qte||0;
+    return ((sp!==null?sp:0)+ac-ve)<10;
+  }) ? '<div style="font-size:9px;color:#a32d2d;margin-top:4px;">⚠ Ligne(s) surlignées : stock inférieur à 10 unités</div>' : ''}
+
+  <div style="border-top:1px solid #d3d1c7;margin-top:18px;padding-top:6px;font-size:9px;color:#999;display:flex;justify-content:space-between;">
+    <span>StockApp — Rapport journalier · ${dateStr}</span>
+    <span>Généré le ${new Date().toLocaleDateString('fr-FR')} à ${nowStr}</span>
+  </div>`;
+}
+
+function pdfTable(headers, rows, footerRows, emptyMsg, cols, rowFlags) {
+  const thStyle = 'background:#e1f5ee;color:#085041;font-weight:700;padding:5px 7px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:0.3px;border:0.5px solid #9fe1cb;';
+  const tdStyle = 'padding:5px 7px;border-bottom:0.5px solid #d3d1c7;vertical-align:middle;font-size:10px;';
+  const tdAlt = 'padding:5px 7px;border-bottom:0.5px solid #d3d1c7;vertical-align:middle;font-size:10px;background:#f8f7f4;';
+  const tfStyle = 'background:#0f6e56;color:white;font-weight:700;font-size:10px;padding:6px 7px;border-color:#085041;';
+
+  let body = '';
+  if (!rows || rows.length === 0) {
+    body = `<tr><td colspan="${cols}" style="${tdStyle}color:#888;font-style:italic;text-align:center;">${emptyMsg||'Aucune donnée'}</td></tr>`;
+  } else {
+    body = rows.map((row, i) => {
+      const isLow = rowFlags && rowFlags[i];
+      const rowBg = isLow ? '#fff0f0' : '';
+      const borderLeft = isLow ? 'border-left:3px solid #a32d2d;' : '';
+      return `<tr>${row.map((cell, ci) =>
+        `<td style="${ci===0&&isLow?borderLeft:''}${i%2===0?tdStyle:tdAlt}${rowBg?'background:'+rowBg+';':''}">${cell}</td>`
+      ).join('')}</tr>`;
+    }).join('');
+  }
+
+  let foot = '';
+  if (footerRows && footerRows.length) {
+    foot = '<tfoot>' + footerRows.map(row =>
+      `<tr>${row.map(cell => `<td style="${tfStyle}">${cell}</td>`).join('')}</tr>`
+    ).join('') + '</tfoot>';
+  }
+
+  return `<table style="width:100%;border-collapse:collapse;margin-bottom:10px;">
+    <thead><tr>${headers.map(h => `<th style="${thStyle}">${h}</th>`).join('')}</tr></thead>
+    <tbody>${body}</tbody>
+    ${foot}
+  </table>`;
+}
+
+// ============================================================
+// CONFIG
+// ============================================================
+function renderConfig() {
+  // Articles
+  document.getElementById('articles-list').innerHTML = appState.articles.map((a, i) => `
+    <div class="pill">${esc(a)}
+      <button class="pill-remove" onclick="removeArticle(${i})">×</button>
+    </div>`).join('');
+
+  // Prix unit inputs
+  document.getElementById('prix-inputs').innerHTML = appState.articles.map(a => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="flex:1;font-size:14px">${esc(a)}</span>
+      <input type="number" value="${appState.prixUnit[a] || ''}" placeholder="0.00" step="0.01"
+        style="width:90px;padding:7px;border:1px solid var(--gray-border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text);"
+        onchange="appState.prixUnit['${esc(a)}'] = parseFloat(this.value)||0; save();">
+      <span style="font-size:12px;color:var(--text-muted)">MAD</span>
+    </div>`).join('');
+
+  // Clients
+  document.getElementById('clients-list').innerHTML = appState.clients.map((c, i) => `
+    <div class="pill">
+      <button class="pill-star" onclick="toggleClientFav(${i})" title="${c.fav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${c.fav ? '★' : '☆'}</button>
+      ${esc(c.name)}
+      <button class="pill-remove" onclick="removeClient(${i})">×</button>
+    </div>`).join('');
+
+  // Fournisseurs
+  document.getElementById('fournis-list').innerHTML = appState.fournisseurs.map((f, i) => `
+    <div class="pill">
+      <button class="pill-star" onclick="toggleFournisFav(${i})">${f.fav ? '★' : '☆'}</button>
+      ${esc(f.name)}
+      <button class="pill-remove" onclick="removeFourni(${i})">×</button>
+    </div>`).join('');
+}
+
+function addArticle() {
+  const v = document.getElementById('new-article').value.trim();
+  if (!v) return;
+  if (appState.articles.find(a => a.toLowerCase() === v.toLowerCase())) { showToast('Article déjà existant'); return; }
+  appState.articles.push(v);
+  save();
+  document.getElementById('new-article').value = '';
+  renderConfig();
+  populateDesignations();
+  showToast('✓ Article ajouté');
+}
+
+function removeArticle(i) {
+  appState.articles.splice(i, 1);
+  save();
+  renderConfig();
+  populateDesignations();
+  showToast('Article supprimé');
+}
+
+function addClient() {
+  const v = document.getElementById('new-client').value.trim();
+  if (!v) return;
+  if (appState.clients.find(c => c.name.toLowerCase() === v.toLowerCase())) { showToast('Client déjà existant'); return; }
+  appState.clients.push({ name: v, fav: false });
+  save();
+  document.getElementById('new-client').value = '';
+  renderConfig();
+  renderFavClients();
+  showToast('✓ Client ajouté');
+}
+
+function removeClient(i) {
+  appState.clients.splice(i, 1);
+  save();
+  renderConfig();
+  renderFavClients();
+}
+
+function toggleClientFav(i) {
+  appState.clients[i].fav = !appState.clients[i].fav;
+  save();
+  renderConfig();
+  renderFavClients();
+}
+
+function addFourni() {
+  const v = document.getElementById('new-fourni').value.trim();
+  if (!v) return;
+  if (appState.fournisseurs.find(f => f.name.toLowerCase() === v.toLowerCase())) { showToast('Fournisseur déjà existant'); return; }
+  appState.fournisseurs.push({ name: v, fav: false });
+  save();
+  document.getElementById('new-fourni').value = '';
+  renderConfig();
+  renderFavFournis();
+  showToast('✓ Fournisseur ajouté');
+}
+
+function removeFourni(i) {
+  appState.fournisseurs.splice(i, 1);
+  save();
+  renderConfig();
+  renderFavFournis();
+}
+
+function toggleFournisFav(i) {
+  appState.fournisseurs[i].fav = !appState.fournisseurs[i].fav;
+  save();
+  renderConfig();
+  renderFavFournis();
+}
+
+// ============================================================
+// POPULATE SELECTS
+// ============================================================
+function populateDesignations() {
+  ['v-designation', 'a-designation'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const curr = sel.value;
+    sel.innerHTML = appState.articles.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+    if (curr && appState.articles.includes(curr)) sel.value = curr;
+  });
+}
+
+function fillFilter(id, options, placeholder) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  const curr = sel.value;
+  sel.innerHTML = `<option value="">${placeholder}</option>` +
+    options.map(o => `<option value="${esc(o)}" ${o === curr ? 'selected' : ''}>${esc(o)}</option>`).join('');
+}
+
+// ============================================================
+// EXPORT / IMPORT
+// ============================================================
+function exportData() {
+  const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'stockapp-backup-' + todayStr() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✓ Export téléchargé');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const data = JSON.parse(evt.target.result);
+      appState = data;
+      save();
+      renderAll();
+      showToast('✓ Données importées');
+    } catch { showToast('⚠ Fichier invalide'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function clearAll() {
+  if (!confirm('Effacer toutes les données ? Cette action est irréversible.')) return;
+  localStorage.removeItem('stockapp_v2');
+  location.reload();
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ============================================================
+// RENDER ALL
+// ============================================================
+function renderAll() {
+  updateDateDisplay();
+  populateDesignations();
+  renderFavClients();
+  renderFavFournis();
+  renderVentesTable();
+  renderAchatsTable();
+
+  // Update prix when designation changes
+  document.getElementById('v-designation').addEventListener('change', function() {
+    const prix = appState.prixUnit[this.value];
+    if (prix) { document.getElementById('v-prix').value = prix; calcMontant(); }
+  });
+}
+
+// ============================================================
+// LISTENERS
+// ============================================================
+document.getElementById('v-qte').addEventListener('input', calcMontant);
+document.getElementById('v-prix').addEventListener('input', calcMontant);
+
+// ============================================================
+// INIT
+// ============================================================
+load();
+setPay('P');
+renderAll();
+
+// PWA: register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+// Handle shortcut tab param
+const urlTab = new URLSearchParams(location.search).get('tab');
+if (urlTab) showTab(urlTab);
+</script>
+</body>
+</html>
