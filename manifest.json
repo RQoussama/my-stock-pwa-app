@@ -2,7 +2,7 @@
   "name": "StockApp — Gestion de Stock",
   "short_name": "StockApp",
   "description": "Application de gestion de stock quotidien : ventes, achats et inventaire",
-  "start_url": "/",
+  "start_url": "/my-pwa-stock-app/index.html",
   "display": "standalone",
   "background_color": "#0f6e56",
   "theme_color": "#0f6e56",
