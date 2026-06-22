@@ -283,15 +283,15 @@
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="showTab('ventes')"><div class="tab-icon">🛒</div>Ventes</div>
-  <div class="tab" onclick="showTab('resume')"><div class="tab-icon">📊</div>Résumé</div>
+  <div class="tab active" onclick="showTab('stock')"><div class="tab-icon">📦</div>Stock</div>
+  <div class="tab" onclick="showTab('ventes')"><div class="tab-icon">🛒</div>Ventes</div>
   <div class="tab" onclick="showTab('achats')"><div class="tab-icon">🏭</div>Achats</div>
-  <div class="tab" onclick="showTab('stock')"><div class="tab-icon">📦</div>Stock</div>
+  <div class="tab" onclick="showTab('resume')"><div class="tab-icon">📊</div>Résumé</div>
   <div class="tab" onclick="showTab('config')"><div class="tab-icon">⚙️</div>Config</div>
 </div>
 
 <!-- ======================== SECTION VENTES ======================== -->
-<div id="sec-ventes" class="section active">
+<div id="sec-ventes" class="section">
   <div class="card">
     <div class="card-title">Nouvelle vente</div>
 
@@ -366,6 +366,19 @@
 <!-- ======================== SECTION RÉSUMÉ ======================== -->
 <div id="sec-resume" class="section">
 
+  <!-- Day selector for résumé -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-title">Jour affiché</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button onclick="resumeChangeDay(-1)" style="background:var(--teal-bg);border:none;color:var(--teal);width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer;flex-shrink:0;">‹</button>
+      <input type="date" id="resume-date-input" onchange="resumeSetDay(this.value)"
+        style="flex:1;padding:9px 12px;border:1px solid var(--gray-border);border-radius:var(--radius-sm);font-size:15px;background:var(--bg);color:var(--text);text-align:center;">
+      <button onclick="resumeChangeDay(1)" style="background:var(--teal-bg);border:none;color:var(--teal);width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer;flex-shrink:0;">›</button>
+      <button onclick="resumeGoToday()" style="background:var(--teal-light);border:none;color:white;padding:9px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;flex-shrink:0;">Aujourd'hui</button>
+    </div>
+    <div id="resume-day-label" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center;"></div>
+  </div>
+
   <div class="print-btn-row">
     <button class="print-btn green" onclick="printResume()">🖨️ Imprimer</button>
     <button class="print-btn red" onclick="exportPDF()">📄 Exporter PDF</button>
@@ -437,6 +450,17 @@
     </div>
   </div>
 
+  <!-- Dépenses fournisseurs -->
+  <div class="card" id="resume-depenses-card">
+    <div class="card-title">Dépenses fournisseurs</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fournisseur</th><th>Description</th><th>Montant</th></tr></thead>
+        <tbody id="resume-depenses-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Stock du jour -->
   <div class="card">
     <div class="card-title">Stock restant (fin de journée)</div>
@@ -481,6 +505,29 @@
     <button class="btn btn-primary" onclick="addAchat()">＋ Ajouter l'achat</button>
   </div>
 
+  <!-- Dépenses fournisseur -->
+  <div class="card">
+    <div class="card-title">Dépenses fournisseur</div>
+
+    <div class="form-row">
+      <label>Fournisseur</label>
+      <div id="fav-fournisseurs-dep" class="fav-list"></div>
+      <input type="text" id="d-fourni" placeholder="Nom du fournisseur..." autocomplete="off">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Montant (MAD)</label>
+        <input type="number" id="d-montant" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <div class="form-row">
+        <label>Description</label>
+        <input type="text" id="d-desc" placeholder="Transport, frais..." autocomplete="off">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="addDepense()">＋ Ajouter la dépense</button>
+  </div>
+
   <!-- Filters -->
   <div class="filter-row">
     <select id="f-achat-fourni" onchange="renderAchatsTable()">
@@ -502,22 +549,45 @@
     </div>
     <div id="achats-totals" class="totals-row" style="margin: 0; border-radius: 0;"></div>
   </div>
+
+  <!-- Dépenses table -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 12px 14px 8px; font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Dépenses du jour</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Fournisseur</th><th>Description</th><th>Montant</th><th></th>
+        </tr></thead>
+        <tbody id="depenses-tbody"></tbody>
+      </table>
+    </div>
+    <div id="depenses-totals" class="totals-row" style="margin: 0; border-radius: 0;"></div>
+  </div>
 </div>
 
 <!-- ======================== SECTION STOCK ======================== -->
-<div id="sec-stock" class="section">
+<div id="sec-stock" class="section active">
+
   <div class="card">
-    <div class="card-title">Stock initial (J-1)</div>
-    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Saisir le stock de départ pour chaque article. Le stock des jours suivants est calculé automatiquement.</p>
+    <div class="card-title">Stock de référence</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+      Entrez le <strong>Stock Final</strong> connu pour chaque article. Le jour actuel sert de référence — le système calcule automatiquement les jours suivants.
+    </p>
     <div id="stock-inputs"></div>
-    <button class="btn btn-primary" onclick="saveStockInitial()" style="margin-top: 8px;">💾 Enregistrer le stock initial</button>
+    <button class="btn btn-primary" onclick="saveStockInitial()" style="margin-top:8px;">💾 Enregistrer</button>
   </div>
 
   <div class="card">
-    <div class="card-title">Stock actuel — Jour sélectionné</div>
+    <div class="card-title" id="stock-table-title">Stock — Jour sélectionné</div>
     <div class="table-wrap">
       <table class="stock-table">
-        <thead><tr><th>Article</th><th>Stock J-1</th><th>Acheté</th><th>Vendu</th><th>Stock Actuel</th></tr></thead>
+        <thead><tr>
+          <th>Article</th>
+          <th>Stock Final (J-1)</th>
+          <th>+ Acheté (J)</th>
+          <th>− Vendu (J)</th>
+          <th>= Stock Final (J)</th>
+        </tr></thead>
         <tbody id="stock-tbody"></tbody>
       </table>
     </div>
@@ -618,8 +688,10 @@ function todayStr() {
 
 function dayData(dayStr) {
   if (!appState.days[dayStr]) {
-    appState.days[dayStr] = { ventes: [], achats: [] };
+    appState.days[dayStr] = { ventes: [], achats: [], depenses: [] };
   }
+  // migrate old entries that don't have depenses
+  if (!appState.days[dayStr].depenses) appState.days[dayStr].depenses = [];
   return appState.days[dayStr];
 }
 
@@ -633,6 +705,10 @@ function load() {
   try {
     const d = localStorage.getItem('stockapp_v2');
     if (d) appState = Object.assign({}, appState, JSON.parse(d));
+    // Normalize _startDay to YYYY-MM-DD in case it was stored with time component
+    if (appState.stockInitial && appState.stockInitial['_startDay']) {
+      appState.stockInitial['_startDay'] = String(appState.stockInitial['_startDay']).slice(0, 10);
+    }
   } catch(e) {}
 }
 
@@ -853,6 +929,7 @@ function renderAchatsTable() {
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="icon">🏭</div>Aucun achat pour ce jour</div></td></tr>`;
     document.getElementById('achats-totals').innerHTML = '';
+    renderDepensesTable();
     return;
   }
 
@@ -865,101 +942,223 @@ function renderAchatsTable() {
       <td><button class="del-btn" onclick="deleteAchat(${a.id})">✕</button></td>
     </tr>`).join('');
 
-  const total = filtered.reduce((s, a) => s + a.qte * a.prix, 0);
+  const totalAchats   = filtered.reduce((s, a) => s + a.qte * a.prix, 0);
+  const depenses      = dayData(currentDay).depenses;
+  const totalDepenses = depenses.reduce((s, d) => s + d.montant, 0);
+  const grandTotal    = totalAchats + totalDepenses;
+
   document.getElementById('achats-totals').innerHTML = `
     <span>${filtered.length} ligne(s)</span>
-    <strong>Total: ${total.toFixed(2)} MAD</strong>`;
+    <div style="display:flex;gap:12px;font-size:12px;align-items:center;">
+      <span style="color:var(--text-muted)">Achats: ${totalAchats.toFixed(2)} MAD</span>
+      ${totalDepenses > 0 ? `<span style="color:var(--amber)">+Dépenses: ${totalDepenses.toFixed(2)} MAD</span>` : ''}
+      <strong>Total: ${grandTotal.toFixed(2)} MAD</strong>
+    </div>`;
+
+  renderDepensesTable();
 }
 
 function renderFavFournis() {
   const favs = appState.fournisseurs.filter(f => f.fav);
-  const el = document.getElementById('fav-fournisseurs');
-  if (!el) return;
-  el.innerHTML = favs.map(f => `
-    <div class="fav-chip" onclick="document.getElementById('a-fourni').value='${esc(f.name)}'">
-      <span class="star">★</span> ${esc(f.name)}
-    </div>`).join('');
+  ['fav-fournisseurs', 'fav-fournisseurs-dep'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const targetInput = id === 'fav-fournisseurs' ? 'a-fourni' : 'd-fourni';
+    el.innerHTML = favs.map(f => `
+      <div class="fav-chip" onclick="document.getElementById('${targetInput}').value='${esc(f.name)}'">
+        <span class="star">★</span> ${esc(f.name)}
+      </div>`).join('');
+  });
+}
+
+// ============================================================
+// DÉPENSES
+// ============================================================
+function addDepense() {
+  const fourni  = document.getElementById('d-fourni').value.trim();
+  const montant = parseFloat(document.getElementById('d-montant').value);
+  const desc    = document.getElementById('d-desc').value.trim();
+
+  if (!fourni)           { showToast('⚠ Entrez un fournisseur'); return; }
+  if (!montant || montant <= 0) { showToast('⚠ Montant invalide'); return; }
+
+  if (!appState.fournisseurs.find(f => f.name.toLowerCase() === fourni.toLowerCase())) {
+    appState.fournisseurs.push({ name: fourni, fav: false });
+  }
+
+  dayData(currentDay).depenses.push({ fourni, montant, desc: desc || '—', id: Date.now() });
+  save();
+  document.getElementById('d-fourni').value  = '';
+  document.getElementById('d-montant').value = '';
+  document.getElementById('d-desc').value    = '';
+  renderDepensesTable();
+  renderFavFournis();
+  showToast('✓ Dépense ajoutée');
+}
+
+function deleteDepense(id) {
+  dayData(currentDay).depenses = dayData(currentDay).depenses.filter(d => d.id !== id);
+  save();
+  renderDepensesTable();
+  showToast('Dépense supprimée');
+}
+
+function renderDepensesTable() {
+  const depenses = dayData(currentDay).depenses;
+  const tbody = document.getElementById('depenses-tbody');
+  if (!tbody) return;
+
+  if (depenses.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty" style="padding:20px">Aucune dépense ce jour</div></td></tr>`;
+    document.getElementById('depenses-totals').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = depenses.map(d => `
+    <tr>
+      <td><strong>${esc(d.fourni)}</strong></td>
+      <td style="color:var(--text-muted)">${esc(d.desc)}</td>
+      <td><strong>${d.montant.toFixed(2)} MAD</strong></td>
+      <td><button class="del-btn" onclick="deleteDepense(${d.id})">✕</button></td>
+    </tr>`).join('');
+
+  const total = depenses.reduce((s, d) => s + d.montant, 0);
+  document.getElementById('depenses-totals').innerHTML = `
+    <span>${depenses.length} dépense(s)</span>
+    <strong>Total dépenses: ${total.toFixed(2)} MAD</strong>`;
+
+  // Also refresh the achat totals row so grand total stays in sync
+  _refreshAchatGrandTotal();
+}
+
+function _refreshAchatGrandTotal() {
+  const achats   = dayData(currentDay).achats;
+  const depenses = dayData(currentDay).depenses;
+  const totalAchats   = achats.reduce((s, a) => s + a.qte * a.prix, 0);
+  const totalDepenses = depenses.reduce((s, d) => s + d.montant, 0);
+  const grandTotal    = totalAchats + totalDepenses;
+  const el = document.getElementById('achats-totals');
+  if (el && achats.length > 0) {
+    el.innerHTML = `
+      <span>${achats.length} ligne(s)</span>
+      <div style="display:flex;gap:12px;font-size:12px;align-items:center;">
+        <span style="color:var(--text-muted)">Achats: ${totalAchats.toFixed(2)} MAD</span>
+        ${totalDepenses > 0 ? `<span style="color:var(--amber)">Dépenses: ${totalDepenses.toFixed(2)} MAD</span>` : ''}
+        <strong>Total: ${grandTotal.toFixed(2)} MAD</strong>
+      </div>`;
+  }
 }
 
 // ============================================================
 // STOCK CALC
+//
+// _startDay  = the reference date the user picked (a past anchor day)
+// initVal    = Stock_final(_startDay) — the closing stock on that reference date
+//
+// getComputedStockForDay(art, J) = Stock_final(J):
+//   J <= _startDay  →  initVal  (no transactions before/on reference date)
+//   J >  _startDay  →  initVal + Σ [achats(d) - ventes(d)] for d = _startDay+1 .. J
+//
+// So for any displayed day D:
+//   "Stock Final (J-1)" = getComputedStockForDay(art, D-1)
+//   "+ Acheté (J)"      = achats of D
+//   "− Vendu (J)"       = ventes of D
+//   "= Stock Final (J)" = getComputedStockForDay(art, D)
+//                       = Stock_final(D-1) + achats(D) − ventes(D)  ✓
 // ============================================================
 function getPrevDay(dayStr) {
-  const d = new Date(dayStr + 'T00:00:00');
+  const d = new Date(String(dayStr).slice(0,10) + 'T12:00:00');
   d.setDate(d.getDate() - 1);
-  return d.toISOString().split('T')[0];
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
-function getStock(article, dayStr) {
-  // Stock = stockInitial[day] or computed from prev day
-  const initKey = article + '_' + dayStr;
-  if (appState.stockInitial[initKey] !== undefined) {
-    return appState.stockInitial[initKey];
-  }
-  // Compute from prev day
-  const prevDay = getPrevDay(dayStr);
-  const prevStock = getStock(article, prevDay);
-  if (prevStock === null) return null;
-
-  const prevData = dayData(prevDay);
-  const qteAchetePrev = prevData.achats.filter(a => a.designation === article).reduce((s, a) => s + a.qte, 0);
-  const qteVenduPrev = prevData.ventes.filter(v => v.designation === article).reduce((s, v) => s + v.qte, 0);
-  return prevStock + qteAchetePrev - qteVenduPrev;
-}
-
-function renderStock() {
-  // Stock initial inputs (for current day - 1 / absolute initial)
-  const inputs = document.getElementById('stock-inputs');
-  inputs.innerHTML = appState.articles.map(a => {
-    const initKey = a + '_initial';
-    const val = appState.stockInitial[initKey] !== undefined ? appState.stockInitial[initKey] : '';
-    return `<div class="form-row" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-      <label style="flex:1;min-width:80px;font-size:14px;color:var(--text)">${esc(a)}</label>
-      <input type="number" data-art="${esc(a)}" value="${val}" placeholder="0" min="0"
-        style="width:100px;padding:8px;border:1px solid var(--gray-border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text);">
-    </div>`;
-  }).join('');
-
-  // Stock summary table
-  const tbody = document.getElementById('stock-tbody');
-  const rows = appState.articles.map(art => {
-    const prevDayStr = getPrevDay(currentDay);
-    const stockPrev = getComputedStockForDay(art, prevDayStr);
-    const data = dayData(currentDay);
-    const achete = data.achats.filter(a => a.designation === art).reduce((s, a) => s + a.qte, 0);
-    const vendu = data.ventes.filter(v => v.designation === art).reduce((s, v) => s + v.qte, 0);
-    const stockActuel = (stockPrev !== null ? stockPrev : 0) + achete - vendu;
-    const low = stockActuel < 10;
-    return `<tr class="${low ? 'low' : ''}">
-      <td><strong>${esc(art)}</strong></td>
-      <td>${stockPrev !== null ? stockPrev : '—'}</td>
-      <td style="color:var(--teal)">+${achete}</td>
-      <td style="color:var(--red)">−${vendu}</td>
-      <td><strong style="${low ? 'color:var(--red)' : ''}">${stockActuel}</strong></td>
-    </tr>`;
-  });
-  tbody.innerHTML = rows.join('') || `<tr><td colspan="5"><div class="empty">Aucun article configuré</div></td></tr>`;
+function getNextDay(dayStr) {
+  const d = new Date(String(dayStr).slice(0,10) + 'T12:00:00');
+  d.setDate(d.getDate() + 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
 function getComputedStockForDay(article, dayStr) {
-  const initKey = article + '_initial';
-  if (appState.stockInitial[initKey] === undefined) return null;
+  const rawStart = appState.stockInitial['_startDay'];
+  const initVal  = appState.stockInitial[article + '_initial'];
+  if (rawStart === undefined || initVal === undefined) return null;
 
-  // Walk from initial day to target
-  const startDay = appState.stockInitial['_startDay'] || currentDay;
-  let stock = appState.stockInitial[initKey];
-  let day = new Date(startDay + 'T00:00:00');
-  const target = new Date(dayStr + 'T00:00:00');
+  const startDay  = String(rawStart).slice(0, 10);
+  const targetDay = String(dayStr).slice(0, 10);
 
-  while (day <= target) {
-    const ds = day.toISOString().split('T')[0];
-    const data = dayData(ds);
-    const achete = data.achats.filter(a => a.designation === article).reduce((s, a) => s + a.qte, 0);
-    const vendu = data.ventes.filter(v => v.designation === article).reduce((s, v) => s + v.qte, 0);
-    stock = stock + achete - vendu;
-    day.setDate(day.getDate() + 1);
+  // On or before the reference date → return stored value unchanged
+  if (targetDay <= startDay) return initVal;
+
+  // Walk day by day from startDay+1 to targetDay using pure date objects
+  // (avoids DST issues from adding fixed ms amounts)
+  let stock = initVal;
+  let cur = new Date(startDay + 'T12:00:00'); // noon avoids DST boundary issues
+  cur.setDate(cur.getDate() + 1);             // start from day AFTER startDay
+
+  const endStr = targetDay;
+
+  while (true) {
+    const ds = cur.getFullYear() + '-'
+      + String(cur.getMonth() + 1).padStart(2, '0') + '-'
+      + String(cur.getDate()).padStart(2, '0');
+    if (ds > endStr) break;
+
+    const day    = dayData(ds);
+    const bought = day.achats.filter(a => a.designation === article).reduce((s, a) => s + a.qte, 0);
+    const sold   = day.ventes.filter(v => v.designation === article).reduce((s, v) => s + v.qte, 0);
+    stock += bought - sold;
+
+    cur.setDate(cur.getDate() + 1);
   }
   return stock;
+}
+
+function renderStock() {
+  const startDay = appState.stockInitial['_startDay'] || '';
+
+  // Article inputs — show stored initVals with the reference day label
+  const inputs = document.getElementById('stock-inputs');
+  const refLabel = startDay
+    ? `Stock Final enregistré pour le <strong>${new Date(startDay+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</strong>`
+    : `Jour actuel : <strong>${new Date(currentDay+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</strong>`;
+
+  inputs.innerHTML = `<p style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">${refLabel}</p>` +
+    appState.articles.map(a => {
+      const val = appState.stockInitial[a + '_initial'] !== undefined ? appState.stockInitial[a + '_initial'] : '';
+      return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <label style="flex:1;font-size:14px;color:var(--text)">${esc(a)}</label>
+        <input type="number" data-art="${esc(a)}" value="${val}" placeholder="0" min="0"
+          style="width:100px;padding:8px;border:1px solid var(--gray-border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--text);">
+      </div>`;
+    }).join('');
+
+  // Table title
+  const titleEl = document.getElementById('stock-table-title');
+  if (titleEl) {
+    const label = new Date(currentDay+'T00:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    titleEl.textContent = `Stock — ${label}`;
+  }
+
+  // Table: Stock_final(J-1) and Stock_final(J) computed directly — no manual ±
+  const tbody = document.getElementById('stock-tbody');
+  const Jminus1 = getPrevDay(currentDay);
+
+  const rows = appState.articles.map(art => {
+    const stockPrev  = getComputedStockForDay(art, Jminus1);
+    const stockFinal = getComputedStockForDay(art, currentDay);
+    const data   = dayData(currentDay);
+    const achete = data.achats.filter(a => a.designation === art).reduce((s, a) => s + a.qte, 0);
+    const vendu  = data.ventes.filter(v => v.designation === art).reduce((s, v) => s + v.qte, 0);
+    const low    = stockFinal !== null && stockFinal < 10;
+    return `<tr class="${low ? 'low' : ''}">
+      <td><strong>${esc(art)}</strong></td>
+      <td>${stockPrev  !== null ? stockPrev  : '—'}</td>
+      <td style="color:var(--teal-light)">+${achete}</td>
+      <td style="color:var(--red)">−${vendu}</td>
+      <td><strong style="${low ? 'color:var(--red)' : ''}">${stockFinal !== null ? stockFinal : '—'}</strong></td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows.join('') || `<tr><td colspan="5"><div class="empty">Aucun article configuré</div></td></tr>`;
 }
 
 function saveStockInitial() {
@@ -968,19 +1167,58 @@ function saveStockInitial() {
     const val = parseFloat(inp.value);
     if (!isNaN(val)) appState.stockInitial[art + '_initial'] = val;
   });
+  // _startDay = currentDay: the values entered ARE Stock_final(currentDay)
+  // So for any day D > currentDay: Stock_final(D) = initVal + Σ Δ(d) for d = currentDay+1..D
   appState.stockInitial['_startDay'] = currentDay;
   save();
   renderStock();
-  showToast('✓ Stock initial enregistré');
+  const d = new Date(currentDay+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  showToast('✓ Stock Final du ' + d + ' enregistré');
 }
 
 // ============================================================
-// RESUME
+// RESUME — own day variable independent from currentDay
 // ============================================================
-function buildDataMaps() {
-  const data = dayData(currentDay);
+let resumeDay = todayStr();
+
+function resumeSetDay(val) {
+  if (!val) return;
+  resumeDay = val;
+  updateResumeDayLabel();
+  renderResume();
+}
+function resumeChangeDay(dir) {
+  const d = new Date(resumeDay + 'T00:00:00');
+  d.setDate(d.getDate() + dir);
+  resumeDay = d.toISOString().split('T')[0];
+  const inp = document.getElementById('resume-date-input');
+  if (inp) inp.value = resumeDay;
+  updateResumeDayLabel();
+  renderResume();
+}
+function resumeGoToday() {
+  resumeDay = todayStr();
+  const inp = document.getElementById('resume-date-input');
+  if (inp) inp.value = resumeDay;
+  updateResumeDayLabel();
+  renderResume();
+}
+function updateResumeDayLabel() {
+  const el = document.getElementById('resume-day-label');
+  if (!el) return;
+  const d = new Date(resumeDay + 'T00:00:00');
+  const label = d.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const isToday = resumeDay === todayStr();
+  el.textContent = label + (isToday ? " — Aujourd'hui" : '');
+  el.style.color = isToday ? 'var(--teal-light)' : 'var(--text-muted)';
+}
+
+function buildDataMaps(dayStr) {
+  const d = dayStr || resumeDay;
+  const data = dayData(d);
   const ventes = data.ventes;
   const achats = data.achats;
+  const depenses = data.depenses || [];
   const ventesMap = {};
   ventes.forEach(v => {
     if (!ventesMap[v.designation]) ventesMap[v.designation] = { qte: 0, total: 0 };
@@ -993,27 +1231,34 @@ function buildDataMaps() {
     achatsMap[a.designation].qte += a.qte;
     achatsMap[a.designation].total += a.qte * a.prix;
   });
-  return { ventes, achats, ventesMap, achatsMap };
+  return { ventes, achats, depenses, ventesMap, achatsMap, dayStr: d };
 }
 
 function renderResume() {
-  const { ventes, achats, ventesMap, achatsMap } = buildDataMaps();
+  // Sync date input
+  const inp = document.getElementById('resume-date-input');
+  if (inp && inp.value !== resumeDay) inp.value = resumeDay;
+  updateResumeDayLabel();
 
-  const totalVendu = ventes.reduce((s, v) => s + v.montant, 0);
-  const totalCredit = ventes.filter(v => v.paye === 'B').reduce((s, v) => s + v.montant, 0);
-  const totalPaye = ventes.filter(v => v.paye === 'P').reduce((s, v) => s + v.montant, 0);
-  const totalAchat = achats.reduce((s, a) => s + a.qte * a.prix, 0);
+  const { ventes, achats, depenses, ventesMap, achatsMap } = buildDataMaps(resumeDay);
 
-  document.getElementById('sum-vendu').textContent = totalVendu.toFixed(2) + ' MAD';
+  const totalVendu      = ventes.reduce((s, v) => s + v.montant, 0);
+  const totalCredit     = ventes.filter(v => v.paye === 'B').reduce((s, v) => s + v.montant, 0);
+  const totalPaye       = ventes.filter(v => v.paye === 'P').reduce((s, v) => s + v.montant, 0);
+  const totalAchatsBase = achats.reduce((s, a) => s + a.qte * a.prix, 0);
+  const totalDepenses   = depenses.reduce((s, d) => s + d.montant, 0);
+  const totalAchat      = totalAchatsBase + totalDepenses;
+
+  document.getElementById('sum-vendu').textContent  = totalVendu.toFixed(2)  + ' MAD';
   document.getElementById('sum-credit').textContent = totalCredit.toFixed(2) + ' MAD';
-  document.getElementById('sum-achat').textContent = totalAchat.toFixed(2) + ' MAD';
-  document.getElementById('sum-trans').textContent = ventes.length;
+  document.getElementById('sum-achat').textContent  = totalAchat.toFixed(2)  + ' MAD';
+  document.getElementById('sum-trans').textContent  = ventes.length;
 
   // Ventes by article
   document.getElementById('resume-ventes-tbody').innerHTML = Object.entries(ventesMap).length
-    ? Object.entries(ventesMap).map(([d, val]) =>
-        `<tr><td>${val.qte}</td><td><strong>${esc(d)}</strong></td><td>${val.total.toFixed(2)} MAD</td></tr>`).join('')
-    : `<tr><td colspan="3"><div class="empty">Aucune vente</div></td></tr>`;
+    ? Object.entries(ventesMap).map(([art, val]) =>
+        `<tr><td>${val.qte}</td><td><strong>${esc(art)}</strong></td><td>${val.total.toFixed(2)} MAD</td></tr>`).join('')
+    : `<tr><td colspan="3"><div class="empty">Aucune vente ce jour</div></td></tr>`;
 
   // Ventes detail
   document.getElementById('resume-ventes-detail-tbody').innerHTML = ventes.length
@@ -1025,7 +1270,7 @@ function renderResume() {
         <td><strong>${v.montant.toFixed(2)} MAD</strong></td>
         <td><span class="badge badge-${v.paye.toLowerCase()}">${v.paye}</span></td>
       </tr>`).join('')
-    : `<tr><td colspan="6"><div class="empty">Aucune vente</div></td></tr>`;
+    : `<tr><td colspan="6"><div class="empty">Aucune vente ce jour</div></td></tr>`;
   document.getElementById('resume-ventes-detail-tfoot').innerHTML = ventes.length
     ? `<tr style="background:var(--gray-light);font-weight:600;font-size:12px;">
         <td colspan="4" style="padding:8px 10px;color:var(--text-muted)">${ventes.length} ligne(s) · P: ${totalPaye.toFixed(2)} · B: ${totalCredit.toFixed(2)} MAD</td>
@@ -1034,9 +1279,9 @@ function renderResume() {
 
   // Achats by article
   document.getElementById('resume-achats-tbody').innerHTML = Object.entries(achatsMap).length
-    ? Object.entries(achatsMap).map(([d, val]) =>
-        `<tr><td>${val.qte}</td><td><strong>${esc(d)}</strong></td><td>${val.total.toFixed(2)} MAD</td></tr>`).join('')
-    : `<tr><td colspan="3"><div class="empty">Aucun achat</div></td></tr>`;
+    ? Object.entries(achatsMap).map(([art, val]) =>
+        `<tr><td>${val.qte}</td><td><strong>${esc(art)}</strong></td><td>${val.total.toFixed(2)} MAD</td></tr>`).join('')
+    : `<tr><td colspan="3"><div class="empty">Aucun achat ce jour</div></td></tr>`;
 
   // Achats detail
   document.getElementById('resume-achats-detail-tbody').innerHTML = achats.length
@@ -1047,27 +1292,54 @@ function renderResume() {
         <td>${a.prix.toFixed(2)} MAD</td>
         <td><strong>${(a.qte * a.prix).toFixed(2)} MAD</strong></td>
       </tr>`).join('')
-    : `<tr><td colspan="5"><div class="empty">Aucun achat</div></td></tr>`;
-  document.getElementById('resume-achats-detail-tfoot').innerHTML = achats.length
-    ? `<tr style="background:var(--gray-light);font-weight:600;font-size:12px;">
-        <td colspan="4" style="padding:8px 10px;color:var(--text-muted)">${achats.length} ligne(s)</td>
-        <td style="padding:8px 10px">Total: ${totalAchat.toFixed(2)} MAD</td>
-      </tr>` : '';
+    : `<tr><td colspan="5"><div class="empty">Aucun achat ce jour</div></td></tr>`;
 
-  // Stock summary
-  const prevDayStr = getPrevDay(currentDay);
+  // Achats detail footer — show base + depenses + total
+  let achatFooter = '';
+  if (achats.length || depenses.length) {
+    achatFooter = `<tr style="background:var(--gray-light);font-weight:600;font-size:12px;">
+      <td colspan="3" style="padding:8px 10px;color:var(--text-muted)">${achats.length} ligne(s) achats · ${depenses.length} dépense(s)</td>
+      <td colspan="2" style="padding:8px 10px">Achats: ${totalAchatsBase.toFixed(2)} MAD</td>
+    </tr>`;
+    if (totalDepenses > 0) {
+      achatFooter += `<tr style="background:var(--amber-bg);font-size:12px;">
+        <td colspan="3" style="padding:6px 10px;color:var(--amber)">Dépenses fournisseurs</td>
+        <td colspan="2" style="padding:6px 10px;font-weight:600;color:var(--amber)">+${totalDepenses.toFixed(2)} MAD</td>
+      </tr>`;
+    }
+    achatFooter += `<tr style="background:var(--teal-bg);font-weight:700;font-size:12px;">
+      <td colspan="3" style="padding:8px 10px;color:var(--teal)">Total Achats (inclus dépenses)</td>
+      <td colspan="2" style="padding:8px 10px;color:var(--teal)">${totalAchat.toFixed(2)} MAD</td>
+    </tr>`;
+  }
+  document.getElementById('resume-achats-detail-tfoot').innerHTML = achatFooter;
+
+  // Dépenses detail — inject after achats detail tfoot if container exists
+  const depEl = document.getElementById('resume-depenses-tbody');
+  if (depEl) {
+    depEl.innerHTML = depenses.length
+      ? depenses.map(d => `<tr>
+          <td><strong>${esc(d.fourni)}</strong></td>
+          <td style="color:var(--text-muted)">${esc(d.desc)}</td>
+          <td><strong>${d.montant.toFixed(2)} MAD</strong></td>
+        </tr>`).join('')
+      : `<tr><td colspan="3"><div class="empty">Aucune dépense ce jour</div></td></tr>`;
+  }
+
+  // Stock
+  const prevDayStr = getPrevDay(resumeDay);
   const stockRows = appState.articles.map(art => {
-    const stockPrev = getComputedStockForDay(art, prevDayStr);
+    const stockOpen  = getComputedStockForDay(art, prevDayStr);
+    const stockClose = getComputedStockForDay(art, resumeDay);
     const achete = (achatsMap[art] || {}).qte || 0;
-    const vendu = (ventesMap[art] || {}).qte || 0;
-    const stockActuel = (stockPrev !== null ? stockPrev : 0) + achete - vendu;
-    const low = stockActuel < 10;
+    const vendu  = (ventesMap[art] || {}).qte || 0;
+    const low    = stockClose !== null && stockClose < 10;
     return `<tr>
       <td><strong>${esc(art)}</strong></td>
-      <td>${stockPrev !== null ? stockPrev : '—'}</td>
+      <td>${stockOpen  !== null ? stockOpen  : '—'}</td>
       <td style="color:var(--teal-light)">+${achete}</td>
       <td style="color:var(--red)">−${vendu}</td>
-      <td><strong style="${low ? 'color:var(--red)' : ''}">${stockActuel}</strong></td>
+      <td><strong style="${low ? 'color:var(--red)' : ''}">${stockClose !== null ? stockClose : '—'}</strong></td>
     </tr>`;
   });
   document.getElementById('resume-stock-tbody').innerHTML = stockRows.join('');
@@ -1077,21 +1349,23 @@ function renderResume() {
 // PRINT
 // ============================================================
 function printResume() {
-  const { ventes, achats, ventesMap, achatsMap } = buildDataMaps();
+  const { ventes, achats, depenses, ventesMap, achatsMap } = buildDataMaps(resumeDay);
 
-  const totalVendu = ventes.reduce((s, v) => s + v.montant, 0);
-  const totalCredit = ventes.filter(v => v.paye === 'B').reduce((s, v) => s + v.montant, 0);
-  const totalPaye = ventes.filter(v => v.paye === 'P').reduce((s, v) => s + v.montant, 0);
-  const totalAchat = achats.reduce((s, a) => s + a.qte * a.prix, 0);
+  const totalVendu      = ventes.reduce((s, v) => s + v.montant, 0);
+  const totalCredit     = ventes.filter(v => v.paye === 'B').reduce((s, v) => s + v.montant, 0);
+  const totalPaye       = ventes.filter(v => v.paye === 'P').reduce((s, v) => s + v.montant, 0);
+  const totalAchatsBase = achats.reduce((s, a) => s + a.qte * a.prix, 0);
+  const totalDepenses   = depenses.reduce((s, d) => s + d.montant, 0);
+  const totalAchat      = totalAchatsBase + totalDepenses;
 
-  const d = new Date(currentDay + 'T00:00:00');
-  const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const nowStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  const prevDayStr = getPrevDay(currentDay);
+  const d = new Date(resumeDay + 'T00:00:00');
+  const dateStr    = d.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const nowStr     = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const prevDayStr = getPrevDay(resumeDay);
 
-  // Fournisseurs map for side table
   const fMap = {};
   achats.forEach(a => { if (!fMap[a.fourni]) fMap[a.fourni] = 0; fMap[a.fourni] += a.qte * a.prix; });
+  depenses.forEach(d => { if (!fMap[d.fourni]) fMap[d.fourni] = 0; fMap[d.fourni] += d.montant; });
 
   const html = `
   <div class="p-header">
@@ -1189,11 +1463,11 @@ function printResume() {
                 `<tr><td>${val.qte}</td><td><strong>${esc(art)}</strong></td><td>${val.total.toFixed(2)} MAD</td></tr>`).join('')
             : '<tr><td colspan="3" style="color:#888;font-style:italic;text-align:center;">Aucun achat</td></tr>'}
         </tbody>
-        ${Object.keys(achatsMap).length ? `<tfoot><tr><td colspan="2">TOTAL</td><td>${totalAchat.toFixed(2)} MAD</td></tr></tfoot>` : ''}
+        ${Object.keys(achatsMap).length ? `<tfoot><tr><td colspan="2">Sous-total</td><td>${totalAchatsBase.toFixed(2)} MAD</td></tr></tfoot>` : ''}
       </table>
     </div>
     <div>
-      <div style="font-size:7.5pt;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Par fournisseur</div>
+      <div style="font-size:7.5pt;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;">Par fournisseur (achats+dépenses)</div>
       <table class="p-table">
         <thead><tr><th>Fournisseur</th><th>Total</th></tr></thead>
         <tbody>
@@ -1219,8 +1493,27 @@ function printResume() {
           </tr>`).join('')
         : '<tr><td colspan="5" style="color:#888;font-style:italic;text-align:center;">Aucun achat enregistré</td></tr>'}
     </tbody>
-    ${achats.length ? `<tfoot><tr><td colspan="4">${achats.length} ligne(s)</td><td>${totalAchat.toFixed(2)} MAD</td></tr></tfoot>` : ''}
+    ${achats.length ? `<tfoot><tr><td colspan="4">${achats.length} ligne(s) — Sous-total achats</td><td>${totalAchatsBase.toFixed(2)} MAD</td></tr></tfoot>` : ''}
   </table>
+
+  ${depenses.length ? `
+  <div style="font-size:7.5pt;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.4px;margin:8px 0 4px;">Dépenses fournisseurs</div>
+  <table class="p-table">
+    <thead><tr><th>Fournisseur</th><th>Description</th><th>Montant</th></tr></thead>
+    <tbody>
+      ${depenses.map(d => `<tr>
+          <td><strong>${esc(d.fourni)}</strong></td>
+          <td>${esc(d.desc)}</td>
+          <td>${d.montant.toFixed(2)} MAD</td>
+        </tr>`).join('')}
+    </tbody>
+    <tfoot><tr><td colspan="2">${depenses.length} dépense(s)</td><td>${totalDepenses.toFixed(2)} MAD</td></tr></tfoot>
+  </table>` : ''}
+
+  <div style="background:#e1f5ee;border-radius:4px;padding:7px 10px;margin:6px 0;display:flex;justify-content:space-between;font-size:9.5pt;font-weight:700;color:#085041;">
+    <span>TOTAL ACHATS + DÉPENSES</span>
+    <span>${totalAchat.toFixed(2)} MAD</span>
+  </div>
 
   <hr class="p-divider">
 
@@ -1229,26 +1522,24 @@ function printResume() {
     <thead><tr><th>Article</th><th>Stock J-1</th><th>+ Acheté</th><th>− Vendu</th><th>= Stock Actuel</th></tr></thead>
     <tbody>
       ${appState.articles.map(art => {
-        const stockPrev = getComputedStockForDay(art, prevDayStr);
+        const stockOpen  = getComputedStockForDay(art, prevDayStr);
+        const stockClose = getComputedStockForDay(art, resumeDay);
         const achete = (achatsMap[art] || {}).qte || 0;
-        const vendu = (ventesMap[art] || {}).qte || 0;
-        const stockActuel = (stockPrev !== null ? stockPrev : 0) + achete - vendu;
-        const low = stockActuel < 10;
+        const vendu  = (ventesMap[art] || {}).qte || 0;
+        const low    = stockClose !== null && stockClose < 10;
         return `<tr class="${low ? 'p-low' : ''}">
           <td><strong>${esc(art)}</strong></td>
-          <td>${stockPrev !== null ? stockPrev : '—'}</td>
+          <td>${stockOpen  !== null ? stockOpen  : '—'}</td>
           <td>+${achete}</td>
           <td>−${vendu}</td>
-          <td><strong>${stockActuel}</strong>${low ? ' ⚠' : ''}</td>
+          <td><strong>${stockClose !== null ? stockClose : '—'}</strong>${low ? ' ⚠' : ''}</td>
         </tr>`;
       }).join('')}
     </tbody>
   </table>
   ${appState.articles.some(art => {
-    const stockPrev = getComputedStockForDay(art, prevDayStr);
-    const achete = (achatsMap[art] || {}).qte || 0;
-    const vendu = (ventesMap[art] || {}).qte || 0;
-    return ((stockPrev !== null ? stockPrev : 0) + achete - vendu) < 10;
+    const sc = getComputedStockForDay(art, resumeDay);
+    return sc !== null && sc < 10;
   }) ? '<p style="font-size:7.5pt;color:#a32d2d;margin-top:4px;">⚠ Ligne(s) surlignées : stock inférieur à 10 unités</p>' : ''}
 
   <div class="p-footer">
@@ -1281,17 +1572,20 @@ async function exportPDF() {
 
     progress.textContent = '⏳ Génération du rapport…';
 
-    const { ventes, achats, ventesMap, achatsMap } = buildDataMaps();
-    const totalVendu = ventes.reduce((s, v) => s + v.montant, 0);
-    const totalCredit = ventes.filter(v => v.paye === 'B').reduce((s, v) => s + v.montant, 0);
-    const totalPaye = ventes.filter(v => v.paye === 'P').reduce((s, v) => s + v.montant, 0);
-    const totalAchat = achats.reduce((s, a) => s + a.qte * a.prix, 0);
-    const d = new Date(currentDay + 'T00:00:00');
-    const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const nowStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    const prevDayStr = getPrevDay(currentDay);
+    const { ventes, achats, depenses, ventesMap, achatsMap } = buildDataMaps(resumeDay);
+    const totalVendu      = ventes.reduce((s, v) => s + v.montant, 0);
+    const totalCredit     = ventes.filter(v => v.paye === 'B').reduce((s, v) => s + v.montant, 0);
+    const totalPaye       = ventes.filter(v => v.paye === 'P').reduce((s, v) => s + v.montant, 0);
+    const totalAchatsBase = achats.reduce((s, a) => s + a.qte * a.prix, 0);
+    const totalDepenses   = depenses.reduce((s, d) => s + d.montant, 0);
+    const totalAchat      = totalAchatsBase + totalDepenses;
+    const d = new Date(resumeDay + 'T00:00:00');
+    const dateStr    = d.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const nowStr     = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const prevDayStr = getPrevDay(resumeDay);
     const fMap = {};
     achats.forEach(a => { if (!fMap[a.fourni]) fMap[a.fourni] = 0; fMap[a.fourni] += a.qte * a.prix; });
+    depenses.forEach(dep => { if (!fMap[dep.fourni]) fMap[dep.fourni] = 0; fMap[dep.fourni] += dep.montant; });
 
     // A4 dimensions (mm) and pixel scale
     const { jsPDF } = window.jspdf;
@@ -1310,8 +1604,8 @@ async function exportPDF() {
     container.style.cssText = `position:fixed;top:-99999px;left:-99999px;width:${PX_W}px;background:white;
       font-family:Arial,Helvetica,sans-serif;font-size:12.5px;color:#1a1a1a;
       padding:38px 43px;box-sizing:border-box;line-height:1.4;`;
-    container.innerHTML = buildPrintHTML({ ventes, achats, ventesMap, achatsMap,
-      totalVendu, totalCredit, totalPaye, totalAchat, dateStr, nowStr, prevDayStr, fMap });
+    container.innerHTML = buildPrintHTML({ ventes, achats, depenses, ventesMap, achatsMap,
+      totalVendu, totalCredit, totalPaye, totalAchat, totalAchatsBase, totalDepenses, dateStr, nowStr, prevDayStr, dayStr: resumeDay, fMap });
     document.body.appendChild(container);
 
     progress.textContent = '⏳ Rendu en cours…';
@@ -1378,7 +1672,7 @@ async function exportPDF() {
       yMm += actualSliceH_mm;
     }
 
-    const fileName = `StockApp-${currentDay}.pdf`;
+    const fileName = `StockApp-${resumeDay}.pdf`;
     pdf.save(fileName);
     progress.textContent = `✓ PDF téléchargé : ${fileName}`;
     setTimeout(() => progress.classList.remove('show'), 3500);
@@ -1401,7 +1695,7 @@ function loadScript(src) {
   });
 }
 
-function buildPrintHTML({ ventes, achats, ventesMap, achatsMap, totalVendu, totalCredit, totalPaye, totalAchat, dateStr, nowStr, prevDayStr, fMap }) {
+function buildPrintHTML({ ventes, achats, depenses, ventesMap, achatsMap, totalVendu, totalCredit, totalPaye, totalAchat, totalAchatsBase, totalDepenses, dateStr, nowStr, prevDayStr, dayStr, fMap }) {
   return `
   <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2.5px solid #0f6e56;padding-bottom:10px;margin-bottom:16px;">
     <div>
@@ -1462,11 +1756,11 @@ function buildPrintHTML({ ventes, achats, ventesMap, achatsMap, totalVendu, tota
       <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px;">Résumé par article</div>
       ${pdfTable(['Qté Achetée','Article','Total Achat'],
         Object.entries(achatsMap).map(([art,v]) => [v.qte, `<b>${esc(art)}</b>`, v.total.toFixed(2)+' MAD']),
-        Object.keys(achatsMap).length ? [['TOTAL','',totalAchat.toFixed(2)+' MAD']] : null,
+        Object.keys(achatsMap).length ? [['Sous-total','',totalAchatsBase.toFixed(2)+' MAD']] : null,
         'Aucun achat', 3)}
     </div>
     <div style="flex:1;">
-      <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px;">Par fournisseur</div>
+      <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px;">Par fournisseur (achats+dép.)</div>
       ${pdfTable(['Fournisseur','Total'],
         Object.entries(fMap).map(([f,t]) => [esc(f), t.toFixed(2)+' MAD']),
         null, '—', 2)}
@@ -1476,39 +1770,47 @@ function buildPrintHTML({ ventes, achats, ventesMap, achatsMap, totalVendu, tota
   <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px;">Détail des achats — par fournisseur</div>
   ${pdfTable(['Fournisseur','Qté','Désignation','Prix Achat','Total'],
     achats.map(a => [`<b>${esc(a.fourni)}</b>`, a.qte, esc(a.designation), a.prix.toFixed(2)+' MAD', (a.qte*a.prix).toFixed(2)+' MAD']),
-    achats.length ? [[`${achats.length} ligne(s)`,'','','', totalAchat.toFixed(2)+' MAD']] : null,
+    achats.length ? [[`${achats.length} ligne(s) — Sous-total achats`,'','','', totalAchatsBase.toFixed(2)+' MAD']] : null,
     'Aucun achat enregistré', 5)}
+
+  ${(depenses||[]).length ? `
+  <div style="font-size:9px;font-weight:700;color:#666;text-transform:uppercase;margin:8px 0 5px;">Dépenses fournisseurs</div>
+  ${pdfTable(['Fournisseur','Description','Montant'],
+    (depenses||[]).map(d => [`<b>${esc(d.fourni)}</b>`, esc(d.desc), d.montant.toFixed(2)+' MAD']),
+    (depenses||[]).length ? [[`${(depenses||[]).length} dépense(s)`,'', (totalDepenses||0).toFixed(2)+' MAD']] : null,
+    '—', 3)}` : ''}
+
+  <div style="background:#e1f5ee;border-radius:4px;padding:7px 12px;margin:6px 0 10px;display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:#085041;">
+    <span>TOTAL ACHATS + DÉPENSES</span>
+    <span>${totalAchat.toFixed(2)} MAD</span>
+  </div>
 
   <div style="border-top:1px dashed #d3d1c7;margin:14px 0;"></div>
 
   <div style="font-size:10px;font-weight:700;color:#0f6e56;text-transform:uppercase;letter-spacing:0.5px;border-left:3px solid #0f6e56;padding-left:7px;margin:14px 0 8px;">Section 3 — Situation du stock (fin de journée)</div>
   ${pdfTable(['Article','Stock J-1','+ Acheté','− Vendu','= Stock Actuel'],
     appState.articles.map(art => {
-      const stockPrev = getComputedStockForDay(art, prevDayStr);
+      const stockOpen  = getComputedStockForDay(art, prevDayStr);
+      const stockClose = getComputedStockForDay(art, dayStr);
       const achete = (achatsMap[art]||{}).qte||0;
-      const vendu = (ventesMap[art]||{}).qte||0;
-      const stockActuel = (stockPrev!==null?stockPrev:0)+achete-vendu;
-      const low = stockActuel < 10;
+      const vendu  = (ventesMap[art]||{}).qte||0;
+      const low    = stockClose !== null && stockClose < 10;
       return [
         `<b style="${low?'color:#a32d2d':''}">${esc(art)}</b>`,
-        stockPrev!==null?stockPrev:'—',
+        stockOpen  !== null ? stockOpen  : '—',
         `+${achete}`, `−${vendu}`,
-        `<b style="${low?'color:#a32d2d':''}">${stockActuel}${low?' ⚠':''}</b>`
+        `<b style="${low?'color:#a32d2d':''}">${stockClose !== null ? stockClose : '—'}${low?' ⚠':''}</b>`
       ];
     }),
     null, 'Aucun article', 5,
     appState.articles.map(art => {
-      const stockPrev = getComputedStockForDay(art, prevDayStr);
-      const achete = (achatsMap[art]||{}).qte||0;
-      const vendu = (ventesMap[art]||{}).qte||0;
-      return ((stockPrev!==null?stockPrev:0)+achete-vendu) < 10;
+      const sc = getComputedStockForDay(art, dayStr);
+      return sc !== null && sc < 10;
     })
   )}
   ${appState.articles.some(art => {
-    const sp = getComputedStockForDay(art, prevDayStr);
-    const ac = (achatsMap[art]||{}).qte||0;
-    const ve = (ventesMap[art]||{}).qte||0;
-    return ((sp!==null?sp:0)+ac-ve)<10;
+    const sc = getComputedStockForDay(art, dayStr);
+    return sc !== null && sc < 10;
   }) ? '<div style="font-size:9px;color:#a32d2d;margin-top:4px;">⚠ Ligne(s) surlignées : stock inférieur à 10 unités</div>' : ''}
 
   <div style="border-top:1px solid #d3d1c7;margin-top:18px;padding-top:6px;font-size:9px;color:#999;display:flex;justify-content:space-between;">
@@ -1742,6 +2044,8 @@ function renderAll() {
   renderFavFournis();
   renderVentesTable();
   renderAchatsTable();
+  renderDepensesTable();
+  renderStock();
 
   // Update prix when designation changes
   document.getElementById('v-designation').addEventListener('change', function() {
@@ -1762,6 +2066,11 @@ document.getElementById('v-prix').addEventListener('input', calcMontant);
 load();
 setPay('P');
 renderAll();
+
+// Init résumé date input to today
+const _resumeInp = document.getElementById('resume-date-input');
+if (_resumeInp) { _resumeInp.value = resumeDay; }
+updateResumeDayLabel();
 
 // PWA: register service worker
 if ('serviceWorker' in navigator) {
