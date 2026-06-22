@@ -1,8 +1,23 @@
-const CACHE_NAME = 'stockapp-v1';
-const ASSETS = ['/', '/index.html', '/manifest.json', '/icon-192.svg', '/icon-512.svg'];
+const CACHE_NAME = 'stockapp-v3';
+
+const BASE = self.location.pathname.replace(/\/sw\.js$/, '') || '';
+
+const ASSETS = [
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/manifest.json',
+  BASE + '/icon-192.png',
+  BASE + '/icon-512.png',
+  BASE + '/icon-192.svg',
+  BASE + '/icon-512.svg'
+];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.allSettled(ASSETS.map(url => cache.add(url)))
+    )
+  );
   self.skipWaiting();
 });
 
@@ -15,12 +30,15 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
-      if (resp.ok && e.request.method === 'GET') {
-        const clone = resp.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-      }
-      return resp;
-    }).catch(() => caches.match('/index.html')))
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(resp => {
+        if (resp.ok && e.request.method === 'GET') {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => caches.match(BASE + '/index.html'));
+    })
   );
 });

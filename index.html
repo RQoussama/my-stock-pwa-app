@@ -4,11 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0f6e56">
+<meta name="description" content="Application de gestion de stock quotidien">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="StockApp">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.svg">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
 <title>StockApp — Gestion de Stock</title>
 <style>
   :root {
@@ -574,7 +578,10 @@
       Entrez le <strong>Stock Final</strong> connu pour chaque article. Le jour actuel sert de référence — le système calcule automatiquement les jours suivants.
     </p>
     <div id="stock-inputs"></div>
-    <button class="btn btn-primary" onclick="saveStockInitial()" style="margin-top:8px;">💾 Enregistrer</button>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-primary" style="flex:1" onclick="saveStockInitial()">💾 Enregistrer</button>
+      <button class="btn btn-ghost" onclick="resetStockRef()" title="Effacer la référence stock enregistrée">↺ Réinitialiser</button>
+    </div>
   </div>
 
   <div class="card">
@@ -683,7 +690,7 @@ let currentPayChoice = 'P';
 
 function todayStr() {
   const d = new Date();
-  return d.toISOString().split('T')[0];
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
 function dayData(dayStr) {
@@ -716,9 +723,9 @@ function load() {
 // DATE NAV
 // ============================================================
 function changeDay(dir) {
-  const d = new Date(currentDay);
+  const d = new Date(currentDay + 'T12:00:00');
   d.setDate(d.getDate() + dir);
-  currentDay = d.toISOString().split('T')[0];
+  currentDay = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   updateDateDisplay();
   renderAll();
 }
@@ -1176,6 +1183,14 @@ function saveStockInitial() {
   showToast('✓ Stock Final du ' + d + ' enregistré');
 }
 
+function resetStockRef() {
+  if (!confirm('Réinitialiser la référence stock ? Les valeurs initiales seront effacées.')) return;
+  appState.stockInitial = {};
+  save();
+  renderStock();
+  showToast('Référence stock réinitialisée');
+}
+
 // ============================================================
 // RESUME — own day variable independent from currentDay
 // ============================================================
@@ -1188,9 +1203,9 @@ function resumeSetDay(val) {
   renderResume();
 }
 function resumeChangeDay(dir) {
-  const d = new Date(resumeDay + 'T00:00:00');
+  const d = new Date(resumeDay + 'T12:00:00');
   d.setDate(d.getDate() + dir);
-  resumeDay = d.toISOString().split('T')[0];
+  resumeDay = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   const inp = document.getElementById('resume-date-input');
   if (inp) inp.value = resumeDay;
   updateResumeDayLabel();
@@ -2075,7 +2090,8 @@ updateResumeDayLabel();
 // PWA: register service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    // Use relative path so it works on any GitHub Pages subdirectory
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
   });
 }
 
